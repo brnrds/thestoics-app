@@ -53,11 +53,14 @@ export function ThreadChatPanel({
       }),
     }),
   });
+  const previousStatusRef = useRef(status);
 
   useEffect(() => {
-    if (status === "ready") {
+    const previousStatus = previousStatusRef.current;
+    if (previousStatus !== "ready" && status === "ready") {
       void onPersistedRefresh();
     }
+    previousStatusRef.current = status;
   }, [status, onPersistedRefresh]);
 
   useEffect(() => {

@@ -114,19 +114,21 @@ export default function ChatWorkspacePage() {
     void bootstrap();
   }, [bootstrap]);
 
+  const activeThreadId = activeThread?.id ?? null;
+
   const refreshActiveThread = useCallback(async () => {
-    if (!activeThread) return;
+    if (!activeThreadId) return;
     const [updatedThreads] = await Promise.all([
       loadThreads(),
-      loadThreadDetail(activeThread.id),
+      loadThreadDetail(activeThreadId),
     ]);
-    if (!updatedThreads.some((thread) => thread.id === activeThread.id)) {
+    if (!updatedThreads.some((thread) => thread.id === activeThreadId)) {
       const next = updatedThreads[0] ?? null;
       setActiveThread(next);
       if (next) await loadThreadDetail(next.id);
       else setActiveMessages([]);
     }
-  }, [activeThread, loadThreadDetail, loadThreads]);
+  }, [activeThreadId, loadThreadDetail, loadThreads]);
 
   const createThread = async () => {
     setError(null);
