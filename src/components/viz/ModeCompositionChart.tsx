@@ -13,9 +13,7 @@ export function ModeCompositionChart({ data }: { data: ChartDatum[] }) {
 
   useEffect(() => {
     const svg = select(svgRef.current);
-    if (!svgRef.current) {
-      return;
-    }
+    if (!svgRef.current) return;
 
     svg.selectAll("*").remove();
 
@@ -29,10 +27,10 @@ export function ModeCompositionChart({ data }: { data: ChartDatum[] }) {
 
     const color = scaleOrdinal<string>()
       .domain(data.map((d) => d.label))
-      .range(["#67764a", "#b2643b", "#8a9f74", "#d5a677"]);
+      .range(["#1a1a1a", "#3d6b50", "#9a9a96", "#6b6b68"]);
 
     const pathGenerator = arc<ReturnType<typeof pieGenerator>[number]>()
-      .innerRadius(radius * 0.45)
+      .innerRadius(radius * 0.52)
       .outerRadius(radius);
 
     const group = svg
@@ -45,23 +43,27 @@ export function ModeCompositionChart({ data }: { data: ChartDatum[] }) {
       .data(pieGenerator(data))
       .join("path")
       .attr("d", pathGenerator)
-      .attr("fill", (d) => color(d.data.label) || "#67764a")
-      .attr("stroke", "#f7f1e8")
+      .attr("fill", (d) => color(d.data.label) || "#1a1a1a")
+      .attr("stroke", "var(--color-surface, #ffffff)")
       .attr("stroke-width", 2)
       .attr("opacity", 0)
       .transition()
-      .duration(500)
+      .duration(600)
       .attr("opacity", 1);
   }, [data]);
 
   return (
-    <div className="card-surface p-4">
-      <p className="mb-2 text-xs uppercase tracking-[0.2em] text-[var(--color-clay-700)]">Config Balance</p>
-      <svg ref={svgRef} className="h-[220px] w-full" aria-label="Mode composition chart" />
-      <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--color-clay-700)]">
+    <div className="rounded-lg border border-rule bg-surface p-5">
+      <p className="label-meta mb-3">Configuration Balance</p>
+      <svg
+        ref={svgRef}
+        className="h-[220px] w-full"
+        aria-label="Mode composition chart"
+      />
+      <div className="mt-3 flex flex-wrap gap-4 font-sans text-xs text-ink-secondary">
         {data.map((entry) => (
           <span key={entry.label}>
-            <strong className="text-[var(--color-ink-900)]">{entry.value}</strong> {entry.label}
+            <strong className="text-ink">{entry.value}</strong> {entry.label}
           </span>
         ))}
       </div>

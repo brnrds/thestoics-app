@@ -15,48 +15,74 @@ export default async function AdminHomePage() {
       db.conversationThread.count(),
     ]);
 
+  const stats = [
+    { label: "Modes", value: modeCount, sub: `${activeModes} active` },
+    { label: "Prompts", value: promptCount },
+    { label: "Skills", value: skillCount },
+  ];
+
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
-      <section className="card-surface space-y-4 p-5">
-        <h2 className="text-2xl font-semibold">Internal Beta Status</h2>
-        <p className="text-sm text-[var(--color-clay-700)]">
-          Shared RAG is always enabled in runtime. Configure prompts and skills per interaction mode, then run parallel thread experiments in the chat workspace.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl bg-white/70 p-3">
-            <p className="text-xs uppercase tracking-[0.15em] text-[var(--color-clay-700)]">Modes</p>
-            <p className="text-3xl font-semibold">{modeCount}</p>
-            <p className="text-xs text-[var(--color-clay-700)]">{activeModes} active</p>
-          </div>
-          <div className="rounded-xl bg-white/70 p-3">
-            <p className="text-xs uppercase tracking-[0.15em] text-[var(--color-clay-700)]">Prompts</p>
-            <p className="text-3xl font-semibold">{promptCount}</p>
-          </div>
-          <div className="rounded-xl bg-white/70 p-3">
-            <p className="text-xs uppercase tracking-[0.15em] text-[var(--color-clay-700)]">Skills</p>
-            <p className="text-3xl font-semibold">{skillCount}</p>
-          </div>
-        </div>
-        <div className="rounded-xl bg-[var(--color-sand-100)]/70 p-3 text-sm">
-          <p>
-            <strong>Default Mode:</strong> {defaultMode?.name ?? "None configured"}
-          </p>
-          <p>
-            <strong>Threads:</strong> {threadCount}
+    <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+      <section className="space-y-5">
+        <div>
+          <h2 className="text-2xl">System Status</h2>
+          <p className="mt-1 font-sans text-sm text-ink-secondary">
+            Configure prompts and skills per mode, then run parallel experiments
+            in chat.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 text-sm">
-          <Link href="/admin/prompts" className="rounded-full bg-[var(--color-olive-500)] px-4 py-2 text-white hover:brightness-95">
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-lg border border-rule bg-surface p-4"
+            >
+              <p className="label-meta">{stat.label}</p>
+              <p className="mt-1 font-sans text-3xl font-light tracking-tight">
+                {stat.value}
+              </p>
+              {stat.sub && (
+                <p className="mt-0.5 font-sans text-xs text-ink-tertiary">
+                  {stat.sub}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-1 rounded-lg border border-rule-light bg-surface-alt/50 p-4 font-sans text-sm">
+          <p>
+            <span className="text-ink-secondary">Default Mode:</span>{" "}
+            {defaultMode?.name ?? "None"}
+          </p>
+          <p>
+            <span className="text-ink-secondary">Threads:</span> {threadCount}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2 font-sans text-sm">
+          <Link
+            href="/admin/prompts"
+            className="rounded-md bg-ink px-4 py-2 text-canvas transition-opacity hover:opacity-85"
+          >
             Manage Prompts
           </Link>
-          <Link href="/admin/skills" className="rounded-full bg-[var(--color-rust-500)] px-4 py-2 text-white hover:brightness-95">
+          <Link
+            href="/admin/skills"
+            className="rounded-md border border-rule px-4 py-2 text-ink transition-colors hover:bg-surface-alt"
+          >
             Manage Skills
           </Link>
-          <Link href="/admin/modes" className="rounded-full border border-[var(--color-clay-700)]/45 px-4 py-2 hover:bg-[var(--color-sand-100)]">
+          <Link
+            href="/admin/modes"
+            className="rounded-md border border-rule px-4 py-2 text-ink transition-colors hover:bg-surface-alt"
+          >
             Manage Modes
           </Link>
         </div>
       </section>
+
       <ModeCompositionChart
         data={[
           { label: "Prompts", value: promptCount || 1 },

@@ -28,13 +28,15 @@ export default function AdminPromptsPage() {
   const loadPrompts = async () => {
     setLoading(true);
     const res = await fetch("/api/admin/prompts", { cache: "no-store" });
-    const data = (await res.json()) as { prompts: PromptRecord[]; error?: string };
+    const data = (await res.json()) as {
+      prompts: PromptRecord[];
+      error?: string;
+    };
     if (!res.ok) {
       setError(data.error || "Failed to load prompts.");
       setLoading(false);
       return;
     }
-
     setPrompts(data.prompts);
     setLoading(false);
   };
@@ -46,16 +48,15 @@ export default function AdminPromptsPage() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-
     if (!form.name.trim() || !form.content.trim()) {
       setError("Prompt name and content are required.");
       return;
     }
-
     setSubmitting(true);
-    const endpoint = form.id ? `/api/admin/prompts/${form.id}` : "/api/admin/prompts";
+    const endpoint = form.id
+      ? `/api/admin/prompts/${form.id}`
+      : "/api/admin/prompts";
     const method = form.id ? "PUT" : "POST";
-
     const res = await fetch(endpoint, {
       method,
       headers: { "Content-Type": "application/json" },
@@ -65,16 +66,14 @@ export default function AdminPromptsPage() {
         content: form.content,
       }),
     });
-
-    const data = (await res.json().catch(() => null)) as { error?: string } | null;
-
+    const data = (await res.json().catch(() => null)) as {
+      error?: string;
+    } | null;
     setSubmitting(false);
-
     if (!res.ok) {
       setError(data?.error || "Failed to save prompt.");
       return;
     }
-
     setForm(initialForm);
     await loadPrompts();
   };
@@ -89,103 +88,152 @@ export default function AdminPromptsPage() {
   };
 
   const onDelete = async (id: string) => {
-    const confirmed = window.confirm("Delete this prompt?");
-    if (!confirmed) {
-      return;
-    }
-
+    if (!window.confirm("Delete this prompt?")) return;
     const res = await fetch(`/api/admin/prompts/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
       setError(data?.error || "Failed to delete prompt.");
       return;
     }
-
     await loadPrompts();
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_1.3fr]">
-      <section className="card-surface p-5">
-        <h2 className="text-2xl font-semibold">Prompt Editor</h2>
-        <p className="mt-1 text-sm text-[var(--color-clay-700)]">Create role-based prompt templates for interaction mode assembly.</p>
+    <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
+      {/* ── Editor ──────────────────────────────────────────────────────── */}
+      <section className="rounded-lg border border-rule bg-surface p-5">
+        <h2 className="text-2xl">Prompt Editor</h2>
+        <p className="mt-1 font-sans text-sm text-ink-secondary">
+          Role-based prompt templates for mode assembly.
+        </p>
 
-        <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-          <label className="block text-sm font-medium">Name</label>
-          <input
-            className="input-base w-full"
-            value={form.name}
-            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-            placeholder="Prompt name"
-            required
-          />
+        <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Name
+            </label>
+            <input
+              className="input-base w-full"
+              value={form.name}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, name: e.target.value }))
+              }
+              placeholder="Prompt name"
+              required
+            />
+          </div>
 
-          <label className="block text-sm font-medium">Role / Type</label>
-          <select
-            className="input-base w-full"
-            value={form.role}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                role: event.target.value as PromptRole,
-              }))
-            }
-          >
-            <option value="SYSTEM">SYSTEM</option>
-            <option value="STYLE">STYLE</option>
-            <option value="SAFETY">SAFETY</option>
-          </select>
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Role
+            </label>
+            <select
+              className="input-base w-full"
+              value={form.role}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  role: e.target.value as PromptRole,
+                }))
+              }
+            >
+              <option value="SYSTEM">SYSTEM</option>
+              <option value="STYLE">STYLE</option>
+              <option value="SAFETY">SAFETY</option>
+            </select>
+          </div>
 
-          <label className="block text-sm font-medium">Content</label>
-          <textarea
-            className="input-base min-h-36 w-full"
-            value={form.content}
-            onChange={(event) => setForm((prev) => ({ ...prev, content: event.target.value }))}
-            placeholder="Prompt text"
-            required
-          />
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Content
+            </label>
+            <textarea
+              className="input-base min-h-36 w-full"
+              value={form.content}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, content: e.target.value }))
+              }
+              placeholder="Prompt text"
+              required
+            />
+          </div>
 
-          <div className="flex flex-wrap gap-2 pt-1 text-sm">
+          <div className="flex flex-wrap gap-2 pt-1 font-sans text-sm">
             <button
               type="submit"
-              className="rounded-full bg-[var(--color-olive-500)] px-4 py-2 text-white disabled:opacity-60"
+              className="rounded-md bg-ink px-4 py-2 text-canvas transition-opacity hover:opacity-85 disabled:opacity-40"
               disabled={submitting}
             >
-              {submitting ? "Saving..." : form.id ? "Update Prompt" : "Create Prompt"}
+              {submitting
+                ? "Saving…"
+                : form.id
+                  ? "Update Prompt"
+                  : "Create Prompt"}
             </button>
-            {form.id ? (
+            {form.id && (
               <button
                 type="button"
-                className="rounded-full border border-[var(--color-clay-700)]/50 px-4 py-2"
+                className="rounded-md border border-rule px-4 py-2 text-ink-secondary transition-colors hover:bg-surface-alt"
                 onClick={() => setForm(initialForm)}
               >
-                Cancel Edit
+                Cancel
               </button>
-            ) : null}
+            )}
           </div>
-          {error ? <p className="text-sm text-red-700">{error}</p> : null}
+          {error && (
+            <p className="font-sans text-sm text-danger">{error}</p>
+          )}
         </form>
       </section>
 
-      <section className="card-surface p-5">
-        <h2 className="text-2xl font-semibold">Prompt Library</h2>
-        <p className="mt-1 text-sm text-[var(--color-clay-700)]">Edits persist immediately and are available for mode assignment.</p>
-        <div className="mt-4 space-y-3">
-          {loading ? <p className="text-sm">Loading prompts...</p> : null}
-          {!loading && prompts.length === 0 ? <p className="text-sm">No prompts yet.</p> : null}
+      {/* ── Library ─────────────────────────────────────────────────────── */}
+      <section className="rounded-lg border border-rule bg-surface p-5">
+        <h2 className="text-2xl">Prompt Library</h2>
+        <p className="mt-1 font-sans text-sm text-ink-secondary">
+          Edits persist immediately for mode assignment.
+        </p>
+
+        <div className="mt-5 space-y-3">
+          {loading && (
+            <p className="font-sans text-sm text-ink-tertiary">
+              Loading prompts…
+            </p>
+          )}
+          {!loading && prompts.length === 0 && (
+            <p className="font-sans text-sm text-ink-tertiary">
+              No prompts yet.
+            </p>
+          )}
           {prompts.map((prompt) => (
-            <article key={prompt.id} className="rounded-xl border border-[var(--color-clay-700)]/28 bg-white/70 p-4">
+            <article
+              key={prompt.id}
+              className="rounded-md border border-rule-light p-4"
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-lg font-semibold">{prompt.name}</h3>
-                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-clay-700)]">{prompt.role}</p>
+                  <h3 className="font-sans text-sm font-medium">{prompt.name}</h3>
+                  <p className="label-meta mt-0.5">{prompt.role}</p>
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <button className="rounded-full border px-3 py-1" onClick={() => onEdit(prompt)}>Edit</button>
-                  <button className="rounded-full border border-red-700 px-3 py-1 text-red-700" onClick={() => onDelete(prompt.id)}>Delete</button>
+                <div className="flex gap-2 font-sans text-xs">
+                  <button
+                    className="rounded px-2 py-1 text-ink-secondary transition-colors hover:bg-surface-alt"
+                    onClick={() => onEdit(prompt)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="rounded px-2 py-1 text-danger transition-colors hover:bg-danger-wash"
+                    onClick={() => onDelete(prompt.id)}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm text-[var(--color-clay-700)]">{prompt.content}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm text-ink-secondary">
+                {prompt.content}
+              </p>
             </article>
           ))}
         </div>

@@ -27,14 +27,15 @@ export default function AdminSkillsPage() {
   const loadSkills = async () => {
     setLoading(true);
     const res = await fetch("/api/admin/skills", { cache: "no-store" });
-    const data = (await res.json()) as { skills: SkillRecord[]; error?: string };
-
+    const data = (await res.json()) as {
+      skills: SkillRecord[];
+      error?: string;
+    };
     if (!res.ok) {
       setError(data.error || "Failed to load skills.");
       setLoading(false);
       return;
     }
-
     setSkills(data.skills);
     setLoading(false);
   };
@@ -46,16 +47,15 @@ export default function AdminSkillsPage() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-
     if (!form.name.trim() || !form.description.trim() || !form.body.trim()) {
       setError("Name, description, and instruction body are required.");
       return;
     }
-
     setSubmitting(true);
-    const endpoint = form.id ? `/api/admin/skills/${form.id}` : "/api/admin/skills";
+    const endpoint = form.id
+      ? `/api/admin/skills/${form.id}`
+      : "/api/admin/skills";
     const method = form.id ? "PUT" : "POST";
-
     const res = await fetch(endpoint, {
       method,
       headers: { "Content-Type": "application/json" },
@@ -65,15 +65,14 @@ export default function AdminSkillsPage() {
         body: form.body,
       }),
     });
-
-    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    const data = (await res.json().catch(() => null)) as {
+      error?: string;
+    } | null;
     setSubmitting(false);
-
     if (!res.ok) {
       setError(data?.error || "Failed to save skill.");
       return;
     }
-
     setForm(initialForm);
     await loadSkills();
   };
@@ -88,96 +87,150 @@ export default function AdminSkillsPage() {
   };
 
   const onDelete = async (id: string) => {
-    const confirmed = window.confirm("Delete this skill?");
-    if (!confirmed) {
-      return;
-    }
-
+    if (!window.confirm("Delete this skill?")) return;
     const res = await fetch(`/api/admin/skills/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
       setError(data?.error || "Failed to delete skill.");
       return;
     }
-
     await loadSkills();
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_1.3fr]">
-      <section className="card-surface p-5">
-        <h2 className="text-2xl font-semibold">Skill Editor</h2>
-        <p className="mt-1 text-sm text-[var(--color-clay-700)]">Define behavioral constraints and reasoning instructions reusable across modes.</p>
+    <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
+      {/* ── Editor ──────────────────────────────────────────────────────── */}
+      <section className="rounded-lg border border-rule bg-surface p-5">
+        <h2 className="text-2xl">Skill Editor</h2>
+        <p className="mt-1 font-sans text-sm text-ink-secondary">
+          Behavioral constraints and reasoning instructions reusable across
+          modes.
+        </p>
 
-        <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-          <label className="block text-sm font-medium">Name</label>
-          <input
-            className="input-base w-full"
-            value={form.name}
-            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-            placeholder="Skill name"
-            required
-          />
+        <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Name
+            </label>
+            <input
+              className="input-base w-full"
+              value={form.name}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, name: e.target.value }))
+              }
+              placeholder="Skill name"
+              required
+            />
+          </div>
 
-          <label className="block text-sm font-medium">Description</label>
-          <input
-            className="input-base w-full"
-            value={form.description}
-            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-            placeholder="Short description"
-            required
-          />
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Description
+            </label>
+            <input
+              className="input-base w-full"
+              value={form.description}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, description: e.target.value }))
+              }
+              placeholder="Short description"
+              required
+            />
+          </div>
 
-          <label className="block text-sm font-medium">Instruction Body</label>
-          <textarea
-            className="input-base min-h-36 w-full"
-            value={form.body}
-            onChange={(event) => setForm((prev) => ({ ...prev, body: event.target.value }))}
-            placeholder="Instruction text"
-            required
-          />
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Instruction Body
+            </label>
+            <textarea
+              className="input-base min-h-36 w-full"
+              value={form.body}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, body: e.target.value }))
+              }
+              placeholder="Instruction text"
+              required
+            />
+          </div>
 
-          <div className="flex flex-wrap gap-2 pt-1 text-sm">
+          <div className="flex flex-wrap gap-2 pt-1 font-sans text-sm">
             <button
               type="submit"
-              className="rounded-full bg-[var(--color-rust-500)] px-4 py-2 text-white disabled:opacity-60"
+              className="rounded-md bg-ink px-4 py-2 text-canvas transition-opacity hover:opacity-85 disabled:opacity-40"
               disabled={submitting}
             >
-              {submitting ? "Saving..." : form.id ? "Update Skill" : "Create Skill"}
+              {submitting
+                ? "Saving…"
+                : form.id
+                  ? "Update Skill"
+                  : "Create Skill"}
             </button>
-            {form.id ? (
+            {form.id && (
               <button
                 type="button"
-                className="rounded-full border border-[var(--color-clay-700)]/50 px-4 py-2"
+                className="rounded-md border border-rule px-4 py-2 text-ink-secondary transition-colors hover:bg-surface-alt"
                 onClick={() => setForm(initialForm)}
               >
-                Cancel Edit
+                Cancel
               </button>
-            ) : null}
+            )}
           </div>
-          {error ? <p className="text-sm text-red-700">{error}</p> : null}
+          {error && (
+            <p className="font-sans text-sm text-danger">{error}</p>
+          )}
         </form>
       </section>
 
-      <section className="card-surface p-5">
-        <h2 className="text-2xl font-semibold">Skill Library</h2>
-        <p className="mt-1 text-sm text-[var(--color-clay-700)]">Duplicate names are blocked to keep assignment unambiguous.</p>
-        <div className="mt-4 space-y-3">
-          {loading ? <p className="text-sm">Loading skills...</p> : null}
-          {!loading && skills.length === 0 ? <p className="text-sm">No skills yet.</p> : null}
+      {/* ── Library ─────────────────────────────────────────────────────── */}
+      <section className="rounded-lg border border-rule bg-surface p-5">
+        <h2 className="text-2xl">Skill Library</h2>
+        <p className="mt-1 font-sans text-sm text-ink-secondary">
+          Duplicate names are blocked to keep assignment unambiguous.
+        </p>
+
+        <div className="mt-5 space-y-3">
+          {loading && (
+            <p className="font-sans text-sm text-ink-tertiary">
+              Loading skills…
+            </p>
+          )}
+          {!loading && skills.length === 0 && (
+            <p className="font-sans text-sm text-ink-tertiary">
+              No skills yet.
+            </p>
+          )}
           {skills.map((skill) => (
-            <article key={skill.id} className="rounded-xl border border-[var(--color-clay-700)]/28 bg-white/70 p-4">
+            <article
+              key={skill.id}
+              className="rounded-md border border-rule-light p-4"
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-lg font-semibold">{skill.name}</h3>
-                  <p className="text-sm text-[var(--color-clay-700)]">{skill.description}</p>
+                  <h3 className="font-sans text-sm font-medium">{skill.name}</h3>
+                  <p className="mt-0.5 font-sans text-xs text-ink-tertiary">
+                    {skill.description}
+                  </p>
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <button className="rounded-full border px-3 py-1" onClick={() => onEdit(skill)}>Edit</button>
-                  <button className="rounded-full border border-red-700 px-3 py-1 text-red-700" onClick={() => onDelete(skill.id)}>Delete</button>
+                <div className="flex gap-2 font-sans text-xs">
+                  <button
+                    className="rounded px-2 py-1 text-ink-secondary transition-colors hover:bg-surface-alt"
+                    onClick={() => onEdit(skill)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="rounded px-2 py-1 text-danger transition-colors hover:bg-danger-wash"
+                    onClick={() => onDelete(skill.id)}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm text-[var(--color-clay-700)]">{skill.body}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm text-ink-secondary">
+                {skill.body}
+              </p>
             </article>
           ))}
         </div>

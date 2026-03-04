@@ -1,7 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { InteractionModeRecord, PromptRecord, SkillRecord } from "@/lib/contracts";
+import type {
+  InteractionModeRecord,
+  PromptRecord,
+  SkillRecord,
+} from "@/lib/contracts";
 
 type ModeForm = {
   id: string | null;
@@ -43,34 +47,41 @@ export default function AdminModesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const promptLookup = useMemo(() => new Map(prompts.map((prompt) => [prompt.id, prompt])), [prompts]);
-  const skillLookup = useMemo(() => new Map(skills.map((skill) => [skill.id, skill])), [skills]);
+  const promptLookup = useMemo(
+    () => new Map(prompts.map((p) => [p.id, p])),
+    [prompts]
+  );
+  const skillLookup = useMemo(
+    () => new Map(skills.map((s) => [s.id, s])),
+    [skills]
+  );
 
   const loadAll = async () => {
     setLoading(true);
-
     const [modeRes, promptRes, skillRes] = await Promise.all([
       fetch("/api/admin/modes", { cache: "no-store" }),
       fetch("/api/admin/prompts", { cache: "no-store" }),
       fetch("/api/admin/skills", { cache: "no-store" }),
     ]);
-
-    const [modeData, promptData, skillData] = await Promise.all([
+    const [modeData, promptData, skillData] = (await Promise.all([
       modeRes.json(),
       promptRes.json(),
       skillRes.json(),
-    ]) as [
+    ])) as [
       { modes?: InteractionModeRecord[]; error?: string },
       { prompts?: PromptRecord[]; error?: string },
-      { skills?: SkillRecord[]; error?: string }
+      { skills?: SkillRecord[]; error?: string },
     ];
-
     if (!modeRes.ok || !promptRes.ok || !skillRes.ok) {
-      setError(modeData.error || promptData.error || skillData.error || "Failed to load mode management data.");
+      setError(
+        modeData.error ||
+          promptData.error ||
+          skillData.error ||
+          "Failed to load mode management data."
+      );
       setLoading(false);
       return;
     }
-
     setModes(modeData.modes || []);
     setPrompts(promptData.prompts || []);
     setSkills(skillData.skills || []);
@@ -84,17 +95,16 @@ export default function AdminModesPage() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-
     const slug = slugify(form.slug || form.name);
     if (!form.name.trim() || !slug || !form.description.trim()) {
       setError("Name, slug, and description are required.");
       return;
     }
-
     setSubmitting(true);
-    const endpoint = form.id ? `/api/admin/modes/${form.id}` : "/api/admin/modes";
+    const endpoint = form.id
+      ? `/api/admin/modes/${form.id}`
+      : "/api/admin/modes";
     const method = form.id ? "PUT" : "POST";
-
     const res = await fetch(endpoint, {
       method,
       headers: { "Content-Type": "application/json" },
@@ -108,31 +118,33 @@ export default function AdminModesPage() {
         skillIds: form.skillIds,
       }),
     });
-
-    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    const data = (await res.json().catch(() => null)) as {
+      error?: string;
+    } | null;
     setSubmitting(false);
-
     if (!res.ok) {
       setError(data?.error || "Failed to save interaction mode.");
       return;
     }
-
     setForm(initialForm);
     await loadAll();
   };
 
   const onDelete = async (id: string) => {
-    if (!window.confirm("Delete this mode? Existing threads keep their stored snapshot.")) {
+    if (
+      !window.confirm(
+        "Delete this mode? Existing threads keep their stored snapshot."
+      )
+    )
       return;
-    }
-
     const res = await fetch(`/api/admin/modes/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
       setError(data?.error || "Failed to delete mode.");
       return;
     }
-
     await loadAll();
   };
 
@@ -144,95 +156,129 @@ export default function AdminModesPage() {
       description: mode.description,
       active: mode.active,
       isDefault: mode.isDefault,
-      promptIds: mode.prompts.map((prompt) => prompt.id),
-      skillIds: mode.skills.map((skill) => skill.id),
+      promptIds: mode.prompts.map((p) => p.id),
+      skillIds: mode.skills.map((s) => s.id),
     });
   };
 
-  const toggleSelection = (value: string, field: "promptIds" | "skillIds") => {
-    setForm((previous) => {
-      const set = new Set(previous[field]);
-      if (set.has(value)) {
-        set.delete(value);
-      } else {
-        set.add(value);
-      }
-      return {
-        ...previous,
-        [field]: Array.from(set),
-      };
+  const toggleSelection = (
+    value: string,
+    field: "promptIds" | "skillIds"
+  ) => {
+    setForm((prev) => {
+      const set = new Set(prev[field]);
+      if (set.has(value)) set.delete(value);
+      else set.add(value);
+      return { ...prev, [field]: Array.from(set) };
     });
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_1.35fr]">
-      <section className="card-surface p-5">
-        <h2 className="text-2xl font-semibold">Interaction Mode Editor</h2>
-        <p className="mt-1 text-sm text-[var(--color-clay-700)]">Attach multiple prompts and skills. Shared RAG behavior is always enabled at runtime.</p>
+    <div className="grid gap-6 lg:grid-cols-[1fr_1.35fr]">
+      {/* ── Editor ──────────────────────────────────────────────────────── */}
+      <section className="rounded-lg border border-rule bg-surface p-5">
+        <h2 className="text-2xl">Mode Editor</h2>
+        <p className="mt-1 font-sans text-sm text-ink-secondary">
+          Attach prompts and skills. RAG is always enabled at runtime.
+        </p>
 
-        <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-          <label className="block text-sm font-medium">Name</label>
-          <input
-            className="input-base w-full"
-            value={form.name}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                name: event.target.value,
-                slug: prev.id ? prev.slug : slugify(event.target.value),
-              }))
-            }
-            placeholder="Mode name"
-            required
-          />
+        <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Name
+            </label>
+            <input
+              className="input-base w-full"
+              value={form.name}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  name: e.target.value,
+                  slug: prev.id ? prev.slug : slugify(e.target.value),
+                }))
+              }
+              placeholder="Mode name"
+              required
+            />
+          </div>
 
-          <label className="block text-sm font-medium">Slug</label>
-          <input
-            className="input-base w-full"
-            value={form.slug}
-            onChange={(event) => setForm((prev) => ({ ...prev, slug: slugify(event.target.value) }))}
-            placeholder="mode-slug"
-            required
-          />
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Slug
+            </label>
+            <input
+              className="input-base w-full"
+              value={form.slug}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  slug: slugify(e.target.value),
+                }))
+              }
+              placeholder="mode-slug"
+              required
+            />
+          </div>
 
-          <label className="block text-sm font-medium">Description</label>
-          <textarea
-            className="input-base min-h-24 w-full"
-            value={form.description}
-            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-            placeholder="Describe this mode"
-            required
-          />
+          <div>
+            <label className="mb-1 block font-sans text-xs font-medium text-ink-secondary">
+              Description
+            </label>
+            <textarea
+              className="input-base min-h-24 w-full"
+              value={form.description}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+              placeholder="Describe this mode"
+              required
+            />
+          </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="flex items-center gap-2 text-sm">
+          <div className="grid gap-3 font-sans text-sm sm:grid-cols-2">
+            <label className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={form.active}
-                onChange={(event) => setForm((prev) => ({ ...prev, active: event.target.checked }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, active: e.target.checked }))
+                }
+                className="accent-accent"
               />
               Active
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={form.isDefault}
-                onChange={(event) => setForm((prev) => ({ ...prev, isDefault: event.target.checked }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    isDefault: e.target.checked,
+                  }))
+                }
+                className="accent-accent"
               />
               Default for New Threads
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <fieldset className="rounded-xl border border-[var(--color-clay-700)]/26 bg-white/70 p-3">
-              <legend className="px-1 text-sm font-semibold">Prompts</legend>
-              <div className="mt-2 max-h-40 space-y-2 overflow-y-auto text-sm">
+            <fieldset className="rounded-md border border-rule-light bg-surface-alt/30 p-3">
+              <legend className="px-1 font-sans text-xs font-medium text-ink-secondary">
+                Prompts
+              </legend>
+              <div className="mt-2 max-h-40 space-y-2 overflow-y-auto font-sans text-sm">
                 {prompts.map((prompt) => (
                   <label key={prompt.id} className="flex items-start gap-2">
                     <input
                       type="checkbox"
                       checked={form.promptIds.includes(prompt.id)}
                       onChange={() => toggleSelection(prompt.id, "promptIds")}
+                      className="mt-0.5 accent-accent"
                     />
                     <span>{prompt.name}</span>
                   </label>
@@ -240,15 +286,18 @@ export default function AdminModesPage() {
               </div>
             </fieldset>
 
-            <fieldset className="rounded-xl border border-[var(--color-clay-700)]/26 bg-white/70 p-3">
-              <legend className="px-1 text-sm font-semibold">Skills</legend>
-              <div className="mt-2 max-h-40 space-y-2 overflow-y-auto text-sm">
+            <fieldset className="rounded-md border border-rule-light bg-surface-alt/30 p-3">
+              <legend className="px-1 font-sans text-xs font-medium text-ink-secondary">
+                Skills
+              </legend>
+              <div className="mt-2 max-h-40 space-y-2 overflow-y-auto font-sans text-sm">
                 {skills.map((skill) => (
                   <label key={skill.id} className="flex items-start gap-2">
                     <input
                       type="checkbox"
                       checked={form.skillIds.includes(skill.id)}
                       onChange={() => toggleSelection(skill.id, "skillIds")}
+                      className="mt-0.5 accent-accent"
                     />
                     <span>{skill.name}</span>
                   </label>
@@ -257,70 +306,115 @@ export default function AdminModesPage() {
             </fieldset>
           </div>
 
-          <div className="flex flex-wrap gap-2 pt-1 text-sm">
+          <div className="flex flex-wrap gap-2 pt-1 font-sans text-sm">
             <button
               type="submit"
-              className="rounded-full bg-[var(--color-ink-900)] px-4 py-2 text-white disabled:opacity-60"
+              className="rounded-md bg-ink px-4 py-2 text-canvas transition-opacity hover:opacity-85 disabled:opacity-40"
               disabled={submitting}
             >
-              {submitting ? "Saving..." : form.id ? "Update Mode" : "Create Mode"}
+              {submitting
+                ? "Saving…"
+                : form.id
+                  ? "Update Mode"
+                  : "Create Mode"}
             </button>
-            {form.id ? (
+            {form.id && (
               <button
                 type="button"
-                className="rounded-full border border-[var(--color-clay-700)]/50 px-4 py-2"
+                className="rounded-md border border-rule px-4 py-2 text-ink-secondary transition-colors hover:bg-surface-alt"
                 onClick={() => setForm(initialForm)}
               >
-                Cancel Edit
+                Cancel
               </button>
-            ) : null}
+            )}
           </div>
-          {error ? <p className="text-sm text-red-700">{error}</p> : null}
+          {error && (
+            <p className="font-sans text-sm text-danger">{error}</p>
+          )}
         </form>
       </section>
 
-      <section className="card-surface p-5">
-        <h2 className="text-2xl font-semibold">Configured Modes</h2>
-        <p className="mt-1 text-sm text-[var(--color-clay-700)]">Each thread stores a mode snapshot so deactivated modes do not break historical conversations.</p>
-        <div className="mt-4 space-y-3">
-          {loading ? <p className="text-sm">Loading modes...</p> : null}
-          {!loading && modes.length === 0 ? <p className="text-sm">No modes configured.</p> : null}
+      {/* ── Configured Modes ────────────────────────────────────────────── */}
+      <section className="rounded-lg border border-rule bg-surface p-5">
+        <h2 className="text-2xl">Configured Modes</h2>
+        <p className="mt-1 font-sans text-sm text-ink-secondary">
+          Threads store a mode snapshot so deactivated modes don&apos;t break
+          history.
+        </p>
+
+        <div className="mt-5 space-y-3">
+          {loading && (
+            <p className="font-sans text-sm text-ink-tertiary">
+              Loading modes…
+            </p>
+          )}
+          {!loading && modes.length === 0 && (
+            <p className="font-sans text-sm text-ink-tertiary">
+              No modes configured.
+            </p>
+          )}
           {modes.map((mode) => (
-            <article key={mode.id} className="rounded-xl border border-[var(--color-clay-700)]/28 bg-white/70 p-4">
+            <article
+              key={mode.id}
+              className="rounded-md border border-rule-light p-4"
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-lg font-semibold">{mode.name}</h3>
-                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-clay-700)]">{mode.slug}</p>
+                  <h3 className="font-sans text-sm font-medium">{mode.name}</h3>
+                  <p className="label-meta mt-0.5">{mode.slug}</p>
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <button className="rounded-full border px-3 py-1" onClick={() => onEdit(mode)}>Edit</button>
-                  <button className="rounded-full border border-red-700 px-3 py-1 text-red-700" onClick={() => onDelete(mode.id)}>Delete</button>
+                <div className="flex gap-2 font-sans text-xs">
+                  <button
+                    className="rounded px-2 py-1 text-ink-secondary transition-colors hover:bg-surface-alt"
+                    onClick={() => onEdit(mode)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="rounded px-2 py-1 text-danger transition-colors hover:bg-danger-wash"
+                    onClick={() => onDelete(mode.id)}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
-              <p className="mt-2 text-sm text-[var(--color-clay-700)]">{mode.description}</p>
-              <p className="mt-2 text-xs text-[var(--color-clay-700)]">
-                {mode.active ? "Active" : "Inactive"} {mode.isDefault ? "• Default" : ""} • Shared RAG enabled
+
+              <p className="mt-2 font-sans text-sm text-ink-secondary">
+                {mode.description}
               </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <p className="mt-2 font-sans text-xs text-ink-tertiary">
+                {mode.active ? "Active" : "Inactive"}
+                {mode.isDefault ? " · Default" : ""}
+              </p>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-clay-700)]">Prompts</p>
-                  <ul className="text-sm">
-                    {mode.prompts.length === 0 ? <li className="text-[var(--color-clay-700)]">None</li> : null}
+                  <p className="label-meta">Prompts</p>
+                  <ul className="mt-1 font-sans text-sm">
+                    {mode.prompts.length === 0 && (
+                      <li className="text-ink-tertiary">None</li>
+                    )}
                     {mode.prompts
                       .sort((a, b) => a.order - b.order)
-                      .map((prompt) => (
-                        <li key={prompt.id}>{promptLookup.get(prompt.id)?.name ?? prompt.name}</li>
+                      .map((p) => (
+                        <li key={p.id}>
+                          {promptLookup.get(p.id)?.name ?? p.name}
+                        </li>
                       ))}
                   </ul>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-clay-700)]">Skills</p>
-                  <ul className="text-sm">
-                    {mode.skills.length === 0 ? <li className="text-[var(--color-clay-700)]">None</li> : null}
+                  <p className="label-meta">Skills</p>
+                  <ul className="mt-1 font-sans text-sm">
+                    {mode.skills.length === 0 && (
+                      <li className="text-ink-tertiary">None</li>
+                    )}
                     {mode.skills
                       .sort((a, b) => a.order - b.order)
-                      .map((skill) => (
-                        <li key={skill.id}>{skillLookup.get(skill.id)?.name ?? skill.name}</li>
+                      .map((s) => (
+                        <li key={s.id}>
+                          {skillLookup.get(s.id)?.name ?? s.name}
+                        </li>
                       ))}
                   </ul>
                 </div>
