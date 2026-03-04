@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+  --color-sand-50: #faf4eb;
+  --color-sand-100: #f2e8d8;
+  --color-sand-200: #dfcdae;
+  --color-clay-700: #5d4a34;
+  --color-ink-900: #1d1a16;
+  --color-olive-500: #67764a;
+  --color-rust-500: #b2643b;
+  --radius-card: 1.25rem;
+  --shadow-soft: 0 20px 35px -24px rgba(53, 39, 24, 0.35);
+}
+
+body {
+  background:
+    radial-gradient(circle at 15% 20%, color-mix(in oklab, var(--color-sand-100), white 20%) 0%, transparent 35%),
+    radial-gradient(circle at 85% 5%, color-mix(in oklab, var(--color-sand-200), white 15%) 0%, transparent 30%),
+    linear-gradient(150deg, var(--color-sand-50) 0%, #efe3d0 55%, #f8efe1 100%);
+  color: var(--color-ink-900);
+  font-family: var(--font-body), sans-serif;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display), serif;
+  letter-spacing: 0.01em;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-rust-500), white 45%);
+  color: var(--color-ink-900);
+}
+
+.card-surface {
+  border: 1px solid color-mix(in oklab, var(--color-clay-700), white 70%);
+  background: color-mix(in oklab, white, var(--color-sand-100) 30%);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-card);
+}
+
+.input-base {
+  border: 1px solid color-mix(in oklab, var(--color-clay-700), white 62%);
+  background: white;
+  border-radius: 0.85rem;
+  padding: 0.65rem 0.8rem;
+  color: var(--color-ink-900);
+}
+
+.input-base:focus {
+  outline: 2px solid color-mix(in oklab, var(--color-olive-500), white 60%);
+  outline-offset: 1px;
+}

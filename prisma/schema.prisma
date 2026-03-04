@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum PromptRole {
+  SYSTEM
+  STYLE
+  SAFETY
+}
+
+model Prompt {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  role      PromptRole
+  content   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  modeLinks ModePrompt[]
+}
+
+model Skill {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  body        String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  modeLinks   ModeSkill[]
+}
+
+model InteractionMode {
+  id          String               @id @default(cuid())
+  name        String               @unique
+  slug        String               @unique
+  description String
+  active      Boolean              @default(true)
+  isDefault   Boolean              @default(false)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  modePrompts ModePrompt[]
+  modeSkills  ModeSkill[]
+  threads     ConversationThread[]
+}
+
+model ModePrompt {
+  modeId   String
+  promptId String
+  order    Int             @default(0)
+  mode     InteractionMode @relation(fields: [modeId], references: [id], onDelete: Cascade)
+  prompt    Prompt         @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@id([modeId, promptId])
+  @@index([modeId, order])
+}
+
+model ModeSkill {
+  modeId  String
+  skillId String
+  order   Int             @default(0)
+  mode    InteractionMode @relation(fields: [modeId], references: [id], onDelete: Cascade)
+  skill   Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([modeId, skillId])
+  @@index([modeId, order])
+}
+
+model ConversationThread {
+  id                     String    @id @default(cuid())
+  title                  String
+  modeId                 String?
+  modeNameSnapshot       String
+  modeSlugSnapshot       String
+  modeDescriptionSnapshot String
+  modePromptSnapshot     Json
+  modeSkillSnapshot      Json
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  mode                   InteractionMode? @relation(fields: [modeId], references: [id], onDelete: SetNull)
+  messages               Message[]
+}
+
+model Message {
+  id           String   @id @default(cuid())
+  threadId     String
+  role         String
+  content      String
+  citations    Json?
+  debugContext Json?
+  createdAt    DateTime @default(now())
+  thread       ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}
