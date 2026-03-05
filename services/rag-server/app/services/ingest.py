@@ -1,16 +1,10 @@
 """Document ingestion service for processing and vectorizing documents."""
 
-import hashlib
 from datetime import datetime
 from pathlib import Path
 
 import structlog
-from langchain_community.document_loaders import (
-    DirectoryLoader,
-    PyPDFLoader,
-    TextLoader,
-    UnstructuredMarkdownLoader,
-)
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
@@ -19,6 +13,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.config import Settings, get_settings
 
 logger = structlog.get_logger()
+DEFAULT_COLLECTION_NAME = "default"
 
 
 class IngestService:
@@ -36,59 +31,59 @@ class IngestService:
             separators=["\n\n", "\n", ". ", " ", ""],
         )
 
-    def _get_file_hash(self, file_path: Path) -> str:
-        """Generate a hash of file content for deduplication."""
-        with open(file_path, "rb") as f:
-            return hashlib.md5(f.read()).hexdigest()
-
     def _load_pdf_documents(self, data_dir: Path) -> list[Document]:
         """Load all PDF files from directory."""
-        documents = []
-        try:
-            loader = DirectoryLoader(
-                str(data_dir),
-                glob="**/*.pdf",
-                loader_cls=PyPDFLoader,
-                show_progress=True,
-                use_multithreading=True,
-            )
-            documents = loader.load()
-            logger.info("loaded_pdfs", count=len(documents))
-        except Exception as e:
-            logger.warning("pdf_load_error", error=str(e))
+        documents: list[Document] = []
+        for file_path in self._iter_files(data_dir, {".pdf"}):
+            try:
+                loader = PyPDFLoader(str(file_path))
+                documents.extend(loader.load())
+            except Exception as e:
+                logger.warning("pdf_load_error", file=str(file_path), error=str(e))
+        logger.info("loaded_pdfs", count=len(documents))
         return documents
 
     def _load_text_documents(self, data_dir: Path) -> list[Document]:
         """Load all text files from directory."""
-        documents = []
-        try:
-            loader = DirectoryLoader(
-                str(data_dir),
-                glob="**/*.txt",
-                loader_cls=TextLoader,
-                show_progress=True,
-            )
-            documents = loader.load()
-            logger.info("loaded_txt", count=len(documents))
-        except Exception as e:
-            logger.warning("txt_load_error", error=str(e))
+        documents: list[Document] = []
+        for file_path in self._iter_files(data_dir, {".txt"}):
+            try:
+                loader = TextLoader(str(file_path), autodetect_encoding=True)
+                documents.extend(loader.load())
+            except Exception as e:
+                logger.warning("txt_load_error", file=str(file_path), error=str(e))
+        logger.info("loaded_txt", count=len(documents))
         return documents
 
     def _load_markdown_documents(self, data_dir: Path) -> list[Document]:
         """Load all markdown files from directory."""
-        documents = []
-        try:
-            loader = DirectoryLoader(
-                str(data_dir),
-                glob="**/*.md",
-                loader_cls=UnstructuredMarkdownLoader,
-                show_progress=True,
-            )
-            documents = loader.load()
-            logger.info("loaded_md", count=len(documents))
-        except Exception as e:
-            logger.warning("md_load_error", error=str(e))
+        documents: list[Document] = []
+        for file_path in self._iter_files(data_dir, {".md"}):
+            try:
+                loader = TextLoader(str(file_path), autodetect_encoding=True)
+                documents.extend(loader.load())
+            except Exception as e:
+                logger.warning("md_load_error", file=str(file_path), error=str(e))
+        logger.info("loaded_md", count=len(documents))
         return documents
+
+    def _iter_files(self, data_dir: Path, suffixes: set[str]) -> list[Path]:
+        """Collect files recursively while skipping excluded directories."""
+        files: list[Path] = []
+        excluded_dirs = self.settings.ingest_excluded_dirs
+
+        for path in data_dir.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in suffixes:
+                continue
+            try:
+                relative_parts = path.relative_to(data_dir).parts[:-1]
+            except ValueError:
+                relative_parts = path.parts[:-1]
+            if any(part in excluded_dirs for part in relative_parts):
+                continue
+            files.append(path)
+
+        return files
 
     def load_all_documents(self, data_dir: Path | None = None) -> list[Document]:
         """Load all supported documents from the data directory."""
@@ -99,7 +94,7 @@ class IngestService:
             data_dir.mkdir(parents=True, exist_ok=True)
             return []
 
-        documents = []
+        documents: list[Document] = []
         documents.extend(self._load_pdf_documents(data_dir))
         documents.extend(self._load_text_documents(data_dir))
         documents.extend(self._load_markdown_documents(data_dir))
@@ -111,7 +106,6 @@ class IngestService:
         """Split documents into chunks for embedding."""
         chunks = self.text_splitter.split_documents(documents)
 
-        # Add metadata
         for i, chunk in enumerate(chunks):
             chunk.metadata["chunk_index"] = i
             chunk.metadata["ingested_at"] = datetime.now().isoformat()
@@ -123,7 +117,6 @@ class IngestService:
         self,
         chunks: list[Document],
         persist_directory: Path | None = None,
-        collection_name: str = "default",
     ) -> Chroma:
         """Create or update the ChromaDB vector store."""
         persist_dir = persist_directory or self.settings.chroma_path
@@ -133,51 +126,57 @@ class IngestService:
             documents=chunks,
             embedding=self.embeddings,
             persist_directory=str(persist_dir),
-            collection_name=collection_name,
+            collection_name=DEFAULT_COLLECTION_NAME,
         )
 
-        logger.info("vectorstore_created", path=str(persist_dir), chunks=len(chunks), collection=collection_name)
+        logger.info("vectorstore_created", path=str(persist_dir), chunks=len(chunks))
         return vectorstore
 
-    def get_existing_vectorstore(self, collection_name: str) -> Chroma | None:
+    def get_existing_vectorstore(self) -> Chroma | None:
         """Load existing vector store if it exists."""
         if not self.settings.chroma_path.exists():
             return None
 
         try:
-            vectorstore = Chroma(
+            return Chroma(
                 persist_directory=str(self.settings.chroma_path),
                 embedding_function=self.embeddings,
-                collection_name=collection_name,
+                collection_name=DEFAULT_COLLECTION_NAME,
             )
-            return vectorstore
         except Exception as e:
-            logger.warning("vectorstore_load_error", error=str(e), collection=collection_name)
+            logger.warning("vectorstore_load_error", error=str(e))
             return None
 
-    def clear_vector_store(self, collection_name: str = "default") -> bool:
-        """Clear a specific collection from the vector store.
-        
-        Note: ChromaDB doesn't support deleting individual collections from a persist directory
-        without more complex logic. This method deletes all documents in the specified collection.
-        """
+    def _delete_existing_sources(self, vectorstore: Chroma, sources: set[str]) -> None:
+        """Delete previously indexed chunks for the same sources to avoid duplicates."""
+        collection = vectorstore._collection
+        for source in sources:
+            if not source:
+                continue
+            try:
+                collection.delete(where={"source": source})
+            except Exception as e:
+                logger.warning("source_delete_failed", source=source, error=str(e))
+
+    def clear_vector_store(self) -> bool:
+        """Clear all documents from the default collection."""
         try:
-            vectorstore = self.get_existing_vectorstore(collection_name=collection_name)
+            vectorstore = self.get_existing_vectorstore()
             if vectorstore:
-                # Get all IDs in the collection and delete them
                 collection = vectorstore._collection
                 result = collection.get()
-                if result["ids"]:
-                    collection.delete(ids=result["ids"])
-                logger.info("collection_cleared", collection=collection_name)
+                ids = result.get("ids", [])
+                if ids:
+                    collection.delete(ids=ids)
+                logger.info("vectorstore_cleared", deleted=len(ids))
             return True
         except Exception as e:
-            logger.error("collection_clear_error", error=str(e), collection=collection_name)
+            logger.error("collection_clear_error", error=str(e))
             return False
 
-    def get_document_stats(self, collection_name: str = "default") -> dict:
+    def get_document_stats(self) -> dict:
         """Get statistics about indexed documents."""
-        vectorstore = self.get_existing_vectorstore(collection_name=collection_name)
+        vectorstore = self.get_existing_vectorstore()
         if not vectorstore:
             return {"documents": [], "total_chunks": 0}
 
@@ -185,7 +184,6 @@ class IngestService:
             collection = vectorstore._collection
             all_data = collection.get(include=["metadatas"])
 
-            # Group by source file
             docs_by_source: dict[str, dict] = {}
             for metadata in all_data.get("metadatas", []):
                 source = metadata.get("source", "unknown")
@@ -205,11 +203,25 @@ class IngestService:
             logger.error("stats_error", error=str(e))
             return {"documents": [], "total_chunks": 0}
 
+    def _upsert_chunks(self, chunks: list[Document]) -> None:
+        """Insert chunks while replacing old chunks from the same source files."""
+        vectorstore = self.get_existing_vectorstore()
+        if not vectorstore:
+            self.create_vector_store(chunks)
+            return
+
+        sources = {
+            str(chunk.metadata.get("source", "")).strip()
+            for chunk in chunks
+            if chunk.metadata.get("source")
+        }
+        self._delete_existing_sources(vectorstore, sources)
+        vectorstore.add_documents(chunks)
+
     def ingest(self, data_dir: Path | None = None) -> dict:
         """Run the full ingestion pipeline."""
-        errors = []
+        errors: list[str] = []
 
-        # Load documents
         documents = self.load_all_documents(data_dir)
         if not documents:
             return {
@@ -219,14 +231,12 @@ class IngestService:
                 "errors": ["No documents found in data directory"],
             }
 
-        # Count unique files
-        unique_files = set()
-        for doc in documents:
-            source = doc.metadata.get("source", "")
-            if source:
-                unique_files.add(source)
+        unique_files = {
+            str(doc.metadata.get("source", "")).strip()
+            for doc in documents
+            if doc.metadata.get("source")
+        }
 
-        # Split into chunks
         try:
             chunks = self.split_documents(documents)
         except Exception as e:
@@ -238,9 +248,8 @@ class IngestService:
                 "errors": errors,
             }
 
-        # Create vector store
         try:
-            self.create_vector_store(chunks)
+            self._upsert_chunks(chunks)
         except Exception as e:
             errors.append(f"Vector store error: {str(e)}")
             return {
@@ -260,35 +269,25 @@ class IngestService:
     def ingest_file(
         self,
         file_path: Path,
-        collection_name: str,
         original_filename: str | None = None,
     ) -> dict:
-        """Ingest a single file into the vector store."""
-        errors = []
-        
-        # Use original filename if provided, otherwise use file path name
+        """Ingest a single file into the default vector store collection."""
+        errors: list[str] = []
         display_filename = original_filename or file_path.name
-        
-        # Determine file type and load
+
         file_ext = file_path.suffix.lower()
-        documents = []
-        
+
         try:
             if file_ext == ".pdf":
                 loader = PyPDFLoader(str(file_path))
-                documents = loader.load()
-            elif file_ext == ".txt":
-                loader = TextLoader(str(file_path))
-                documents = loader.load()
-            elif file_ext == ".md":
-                loader = UnstructuredMarkdownLoader(str(file_path))
-                documents = loader.load()
-            elif file_ext in [".doc", ".docx"]:
-                # For DOC/DOCX, we'd need python-docx or similar
-                # For now, raise an error
+            elif file_ext in {".txt", ".md"}:
+                loader = TextLoader(str(file_path), autodetect_encoding=True)
+            elif file_ext in {".doc", ".docx"}:
                 raise ValueError(f"DOC/DOCX files not yet supported: {file_ext}")
             else:
                 raise ValueError(f"Unsupported file type: {file_ext}")
+
+            documents = loader.load()
         except Exception as e:
             errors.append(f"Load error: {str(e)}")
             return {
@@ -297,7 +296,7 @@ class IngestService:
                 "chunks_created": 0,
                 "errors": errors,
             }
-        
+
         if not documents:
             return {
                 "status": "warning",
@@ -305,12 +304,10 @@ class IngestService:
                 "chunks_created": 0,
                 "errors": ["No content extracted from file"],
             }
-        
-        # Update source metadata to use original filename
+
         for doc in documents:
             doc.metadata["source"] = display_filename
-        
-        # Split into chunks
+
         try:
             chunks = self.split_documents(documents)
         except Exception as e:
@@ -321,24 +318,10 @@ class IngestService:
                 "chunks_created": 0,
                 "errors": errors,
             }
-        
-        # Add to vector store
+
         try:
-            # Get or create vectorstore
-            vectorstore = self.get_existing_vectorstore(collection_name=collection_name)
-            if vectorstore:
-                # Add documents to existing collection
-                vectorstore.add_documents(chunks)
-            else:
-                # Create new collection
-                self.create_vector_store(chunks, collection_name=collection_name)
-            
-            logger.info(
-                "file_ingested",
-                filename=display_filename,
-                chunks=len(chunks),
-                collection=collection_name,
-            )
+            self._upsert_chunks(chunks)
+            logger.info("file_ingested", filename=display_filename, chunks=len(chunks))
         except Exception as e:
             errors.append(f"Vector store error: {str(e)}")
             return {
@@ -347,7 +330,7 @@ class IngestService:
                 "chunks_created": len(chunks),
                 "errors": errors,
             }
-        
+
         return {
             "status": "success",
             "files_processed": 1,
@@ -359,6 +342,3 @@ class IngestService:
 def get_ingest_service() -> IngestService:
     """Dependency injection for IngestService."""
     return IngestService()
-
-
-

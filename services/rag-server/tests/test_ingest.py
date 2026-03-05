@@ -1,9 +1,7 @@
 """Tests for document ingestion service."""
 
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-import pytest
 from langchain_core.documents import Document
 
 from app.services.ingest import IngestService
@@ -73,21 +71,15 @@ class TestIngestService:
             assert result["files_processed"] == 0
             assert "No documents found" in result["errors"][0]
 
-    def test_clear_vector_store(self, tmp_path):
+    def test_clear_vector_store(self):
         """Test clearing vector store."""
-        chroma_path = tmp_path / "chroma_db"
-        chroma_path.mkdir()
-        (chroma_path / "test.txt").touch()
+        mock_vectorstore = MagicMock()
+        mock_vectorstore._collection.get.return_value = {"ids": ["a", "b"]}
 
-        with patch.object(IngestService, "__init__", lambda x: None):
+        with patch.object(IngestService, "get_existing_vectorstore", return_value=mock_vectorstore):
             service = IngestService()
-            service.settings = MagicMock()
-            service.settings.chroma_path = chroma_path
-
             success = service.clear_vector_store()
 
             assert success
-            assert not chroma_path.exists()
-
-
+            mock_vectorstore._collection.delete.assert_called_once_with(ids=["a", "b"])
 

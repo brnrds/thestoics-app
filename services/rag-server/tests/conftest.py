@@ -48,7 +48,6 @@ def sample_documents():
 def mock_vectorstore(sample_documents):
     """Mock ChromaDB vector store."""
     mock = MagicMock()
-    mock.as_retriever.return_value.invoke.return_value = sample_documents
     mock.similarity_search_with_score.return_value = [
         (doc, 0.9) for doc in sample_documents
     ]
@@ -78,6 +77,5 @@ def fixtures_dir():
     path = Path(__file__).parent / "fixtures"
     path.mkdir(exist_ok=True)
     return path
-
 
 

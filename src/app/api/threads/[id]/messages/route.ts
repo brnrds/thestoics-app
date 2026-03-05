@@ -153,32 +153,17 @@ export async function POST(request: Request, { params }: Params) {
   const assembly = assembleModeContext(modeSnapshot);
 
   const ragResult = await queryRagService({
-    message: latestUser.content,
-    use_rag: true,
-    history: workingMessages.map((message) => ({
-      role: message.role,
-      content: message.content,
-    })),
-    config_a: {
-      use_rag: true,
-      system_prompt_override: assembly.text,
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      k: 5,
-    },
+    query: latestUser.content,
+    k: 5,
   });
 
   const retrievalContext =
-    ragResult.sources.length > 0
-      ? ragResult.sources
-          .map(
-            (source, index) =>
-              `[${index + 1}] ${source.source}${typeof source.page === "number" ? ` (p.${source.page})` : ""}: ${source.excerpt}`
-          )
-          .join("\n\n")
+    ragResult.available && ragResult.context.trim().length > 0
+      ? ragResult.context
       : "No retrieval matches returned.";
 
   const ragStatus = ragResult.available
-    ? `RAG available with ${ragResult.sources.length} source(s).`
+    ? `RAG available with ${ragResult.matchCount} source(s).`
     : `RAG unavailable: ${ragResult.error || "unknown error"}`;
 
   const system = [

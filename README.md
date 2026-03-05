@@ -82,11 +82,10 @@ Use `.env.local`:
 
 ## RAG Service Expectations
 
-The app calls `POST {RAG_SERVER_URL}/chat` with a payload compatible with the `reference/rag-server` contract:
+The app calls `POST {RAG_SERVER_URL}/rag/retrieve` with a retrieval-focused payload:
 
-- Request includes: `message`, `history`, `use_rag`, and mode-aware config fields.
-- Response (non-stream) supports: `{ response, sources, conversation_id }`.
-- Streaming NDJSON/SSE events are also tolerated (`token`, `sources`, `done`, `error`).
+- Request includes: `query`, optional `k`, and optional `score_threshold`.
+- Response supports: `{ query, context, sources, match_count }`.
 - Sources are normalized to:
 
 ```ts
@@ -98,6 +97,8 @@ The app calls `POST {RAG_SERVER_URL}/chat` with a payload compatible with the `r
 ```
 
 If RAG is down, chat still responds with graceful fallback behavior and empty citation state.
+
+The `services/rag-server` default `DATA_PATH` is the repo root, with common heavy directories excluded (`node_modules`, `.next`, `.git`, etc.).
 
 ## Scripts
 

@@ -6,7 +6,7 @@ Build an internal beta AI chat application called **Confer with the Stoics**.
 
 The product provides a multi-thread chat experience where each conversation runs in an admin-defined **interaction mode**. A mode defines how the assistant behaves by combining a set of prompts and skills (core product tenet). Different modes can be tested in parallel (for example, a structured stoic guidance mode vs a more open conversational mode).
 
-RAG is shared across all interaction modes and uses an API pattern based on `reference/rag-server/`. RAG content ingestion and management are out of scope in this phase; focus is on full query/retrieval flow and source-aware chat behavior.
+RAG is shared across all interaction modes and uses an API pattern based on `services/rag-server/`. RAG content ingestion and management are out of scope in this phase; focus is on full query/retrieval flow and source-aware chat behavior.
 
 Authentication can be stubbed in this phase. Clerk integration is explicitly out of scope.
 
@@ -131,7 +131,7 @@ Authentication can be stubbed in this phase. Clerk integration is explicitly out
 **Description:** As a developer, I want a stable RAG adapter so that all interaction modes can use the same retrieval layer.
 
 **Acceptance Criteria:**
-- [ ] A RAG client module calls a backend API shaped after `reference/rag-server` request/response schemas.
+- [ ] A RAG client module calls a backend API shaped after `services/rag-server` request/response schemas.
 - [ ] RAG request includes message/query, conversation context, and mode-relevant configuration.
 - [ ] Retrieved sources are returned in a normalized format for rendering in chat.
 - [ ] Streaming and non-stream RAG response handling is supported where applicable.
@@ -173,7 +173,7 @@ Authentication can be stubbed in this phase. Clerk integration is explicitly out
 - FR-12: Each thread must store mode configuration snapshot data for reproducibility.
 - FR-13: Chat runtime must assemble system instructions from the thread’s mode prompts and skills.
 - FR-14: Chat model invocation and streaming must use AI SDK APIs.
-- FR-15: The app must integrate a shared RAG adapter based on `reference/rag-server` schema patterns.
+- FR-15: The app must integrate a shared RAG adapter based on `services/rag-server` schema patterns.
 - FR-16: RAG must be applied consistently across all interaction modes in v1.
 - FR-17: Chat responses must support attached source citations from RAG results.
 - FR-18: The chat UI must render streaming text, loading state, and error state.
@@ -203,7 +203,7 @@ Authentication can be stubbed in this phase. Clerk integration is explicitly out
 
 - Use `ai-sdk` patterns from `reference/ai-sdk-showcase` for chat runtime, streaming, and server route structure.
 - Keep AI provider access behind a small adapter module to prevent provider leakage across the codebase.
-- Implement RAG integration as an explicit service boundary (for example: `lib/rag-client.ts` + server API route), modeled after `reference/rag-server` request/response contracts (`ChatRequest`, `ChatResponse`, `Source`, stream events).
+- Implement RAG integration as an explicit service boundary (for example: `lib/rag-client.ts` + server API route), modeled after `services/rag-server` request/response contracts (`ChatRequest`, `ChatResponse`, `Source`, stream events).
 - Normalize RAG responses so UI does not depend on backend-specific field naming changes.
 - Use a persistence layer suitable for internal beta iteration (e.g., SQLite/Postgres with ORM), with clear migration support.
 - Keep admin auth guard modular to allow Clerk replacement with minimal route/component changes.

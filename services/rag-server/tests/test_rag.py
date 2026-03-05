@@ -1,6 +1,6 @@
 """Tests for RAG service."""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -20,7 +20,7 @@ class TestRAGService:
             assert "propaganda.pdf" in context
             assert "crystallizing.pdf" in context
             assert "conscious and intelligent manipulation" in context
-            assert "---" in context  # Separator between docs
+            assert "[1] Source:" in context
 
     def test_format_context_empty(self):
         """Test formatting empty document list."""
@@ -51,20 +51,19 @@ class TestRAGService:
             docs = service.retrieve("test query")
 
             assert len(docs) == 3
-            mock_vectorstore.as_retriever.assert_called_once()
+            mock_vectorstore.similarity_search_with_score.assert_called_once()
 
-    def test_retrieve_handles_errors(self):
-        """Test retrieval handles errors gracefully."""
+    def test_retrieve_raises_errors(self):
+        """Test retrieval surfaces errors."""
         mock_vs = MagicMock()
-        mock_vs.as_retriever.return_value.invoke.side_effect = Exception("DB error")
+        mock_vs.similarity_search_with_score.side_effect = Exception("DB error")
 
         with patch.object(RAGService, "_load_vectorstore", return_value=mock_vs):
             service = RAGService()
             service._vectorstore = mock_vs
 
-            docs = service.retrieve("test query")
-
-            assert docs == []
+            with pytest.raises(Exception, match="DB error"):
+                service.retrieve("test query")
 
     def test_retrieve_and_format(self, mock_vectorstore, sample_documents):
         """Test combined retrieve and format."""
@@ -77,6 +76,3 @@ class TestRAGService:
             assert isinstance(context, str)
             assert len(sources) == 3
             assert "propaganda.pdf" in context
-
-
-

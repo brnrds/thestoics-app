@@ -4,33 +4,15 @@ export type RAGSource = {
   page?: number | null;
 };
 
-export type HistoryMessage = {
-  role: "user" | "assistant";
-  content: string;
+export type RAGRetrieveRequest = {
+  query: string;
+  k?: number;
+  score_threshold?: number;
 };
 
-export type RAGChatRequest = {
-  message: string;
-  conversation_id?: string;
-  history?: HistoryMessage[];
-  use_rag: boolean;
-  model?: string;
-  config_a?: {
-    use_rag?: boolean;
-    temperature?: number;
-    k?: number;
-    model?: string;
-    system_prompt_override?: string;
-  };
-};
-
-export type RAGChatResponse = {
-  response: string;
+export type RAGRetrieveResponse = {
+  query: string;
+  context: string;
   sources: RAGSource[];
-  conversation_id?: string;
-};
-
-export type RAGStreamEvent = {
-  type: "token" | "sources" | "done" | "error";
-  content?: string | RAGSource[] | null;
+  match_count: number;
 };

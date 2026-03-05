@@ -43,8 +43,11 @@ next-env.d.ts
 # prisma / sqlite
 *.db
 
-# reference / python
+# reference / python / services
 __pycache__/
 *.py[cod]
 .coverage
 .pytest_cache/
+htmlcov/
+services/**/.venv/
+services/**/chroma_db/

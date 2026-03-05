@@ -12,7 +12,7 @@ vi.mock("@/lib/ai-provider", () => ({
 vi.mock("@/lib/rag-client", () => ({
   queryRagService: vi.fn(async () => ({
     available: true,
-    response: "",
+    context: "[1] Source: Meditations\nFocus on what is in your control.",
     sources: [
       {
         source: "Meditations",
@@ -20,6 +20,7 @@ vi.mock("@/lib/rag-client", () => ({
         page: 12,
       },
     ],
+    matchCount: 1,
   })),
 }));
 

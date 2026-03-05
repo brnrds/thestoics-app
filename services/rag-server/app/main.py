@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import admin, chat, dataset, finetune, ingest
+from app.routers import ingest, rag
 
 # Configure structured logging
 structlog.configure(
@@ -30,12 +30,12 @@ logger = structlog.get_logger()
 
 # Create FastAPI app
 app = FastAPI(
-    title="Model Forge API",
+    title="Stoics RAG API",
     description=(
-        "A fine-tuning platform for creating custom LLM personas. "
-        "Upload documents, generate training data, and fine-tune models."
+        "RAG backend for ingesting documents and serving "
+        "retrieval context + source citations."
     ),
-    version="1.0.0",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -56,22 +56,19 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(chat.router)
 app.include_router(ingest.router)
-app.include_router(admin.router)
-app.include_router(dataset.router)
-app.include_router(finetune.router)
+app.include_router(rag.router)
 
 
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
     return {
-        "name": "Model Forge API",
-        "version": "1.0.0",
-        "description": "Fine-tuning platform for custom LLM personas",
+        "name": "Stoics RAG API",
+        "version": "2.0.0",
+        "description": "RAG-only backend (ingest + retrieval)",
         "docs": "/docs",
-        "health": "/admin/health",
+        "health": "/health",
     }
 
 
@@ -87,7 +84,8 @@ async def startup_event():
     logger.info(
         "application_started",
         cors_origins=settings.cors_origins,
-        default_model=settings.default_model,
+        data_path=str(settings.data_path),
+        chroma_path=str(settings.chroma_path),
     )
 
 
@@ -95,4 +93,3 @@ async def startup_event():
 async def shutdown_event():
     """Run on application shutdown."""
     logger.info("application_shutdown")
-

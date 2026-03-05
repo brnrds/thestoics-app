@@ -1,13 +1,6 @@
-import type { RAGChatRequest, RAGChatResponse, RAGSource, RAGStreamEvent } from "@/lib/rag/types";
+import type { RAGRetrieveRequest, RAGRetrieveResponse, RAGSource } from "@/lib/rag/types";
 
 const DEFAULT_TIMEOUT_MS = 6000;
-
-export class RagUnavailableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "RagUnavailableError";
-  }
-}
 
 function normalizeSource(source: unknown): RAGSource | null {
   if (!source || typeof source !== "object") {
@@ -22,15 +15,18 @@ function normalizeSource(source: unknown): RAGSource | null {
   return { source: src, excerpt, page };
 }
 
-export function normalizeRagResponse(input: unknown): RAGChatResponse {
+export function normalizeRagResponse(input: unknown): RAGRetrieveResponse {
   if (!input || typeof input !== "object") {
-    return { response: "", sources: [] };
+    return { query: "", context: "", sources: [], match_count: 0 };
   }
 
   const payload = input as Record<string, unknown>;
-  const response = typeof payload.response === "string" ? payload.response : "";
-  const conversationId =
-    typeof payload.conversation_id === "string" ? payload.conversation_id : undefined;
+  const query = typeof payload.query === "string" ? payload.query : "";
+  const context = typeof payload.context === "string" ? payload.context : "";
+  const matchCount =
+    typeof payload.match_count === "number" && Number.isFinite(payload.match_count)
+      ? payload.match_count
+      : 0;
 
   const rawSources = Array.isArray(payload.sources) ? payload.sources : [];
   const sources = rawSources
@@ -38,61 +34,18 @@ export function normalizeRagResponse(input: unknown): RAGChatResponse {
     .filter((source): source is RAGSource => source !== null);
 
   return {
-    response,
+    query,
+    context,
     sources,
-    conversation_id: conversationId,
+    match_count: matchCount,
   };
 }
 
-export async function parseRagStreamEvents(body: ReadableStream<Uint8Array>): Promise<{
-  response: string;
-  sources: RAGSource[];
-}> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let text = "";
-  let response = "";
-  let sources: RAGSource[] = [];
-
-  while (true) {
-    const chunk = await reader.read();
-    if (chunk.done) {
-      break;
-    }
-
-    text += decoder.decode(chunk.value, { stream: true });
-    const lines = text.split("\n");
-    text = lines.pop() ?? "";
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) {
-        continue;
-      }
-
-      try {
-        const event = JSON.parse(trimmed) as RAGStreamEvent;
-        if (event.type === "token" && typeof event.content === "string") {
-          response += event.content;
-        }
-        if (event.type === "sources" && Array.isArray(event.content)) {
-          sources = event.content
-            .map((source) => normalizeSource(source))
-            .filter((source): source is RAGSource => source !== null);
-        }
-      } catch {
-        // Ignore malformed stream lines and continue to preserve chat continuity.
-      }
-    }
-  }
-
-  return { response, sources };
-}
-
-export async function queryRagService(payload: RAGChatRequest): Promise<{
+export async function queryRagService(payload: RAGRetrieveRequest): Promise<{
   available: boolean;
-  response: string;
+  context: string;
   sources: RAGSource[];
+  matchCount: number;
   error?: string;
 }> {
   const baseUrl = process.env.RAG_SERVER_URL?.trim();
@@ -100,8 +53,9 @@ export async function queryRagService(payload: RAGChatRequest): Promise<{
   if (!baseUrl) {
     return {
       available: false,
-      response: "",
+      context: "",
       sources: [],
+      matchCount: 0,
       error: "RAG_SERVER_URL is not configured.",
     };
   }
@@ -113,7 +67,7 @@ export async function queryRagService(payload: RAGChatRequest): Promise<{
   const timeoutHandle = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const res = await fetch(`${baseUrl}/chat`, {
+    const res = await fetch(`${baseUrl}/rag/retrieve`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -126,20 +80,10 @@ export async function queryRagService(payload: RAGChatRequest): Promise<{
     if (!res.ok) {
       return {
         available: false,
-        response: "",
+        context: "",
         sources: [],
+        matchCount: 0,
         error: `RAG service returned ${res.status}`,
-      };
-    }
-
-    const contentType = res.headers.get("content-type") || "";
-
-    if ((contentType.includes("application/x-ndjson") || contentType.includes("text/event-stream")) && res.body) {
-      const streamed = await parseRagStreamEvents(res.body);
-      return {
-        available: true,
-        response: streamed.response,
-        sources: streamed.sources,
       };
     }
 
@@ -148,14 +92,16 @@ export async function queryRagService(payload: RAGChatRequest): Promise<{
 
     return {
       available: true,
-      response: normalized.response,
+      context: normalized.context,
       sources: normalized.sources,
+      matchCount: normalized.match_count,
     };
   } catch (error) {
     return {
       available: false,
-      response: "",
+      context: "",
       sources: [],
+      matchCount: 0,
       error: error instanceof Error ? error.message : "Unknown RAG error",
     };
   } finally {
