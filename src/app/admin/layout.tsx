@@ -3,11 +3,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { href: "/chat", label: "Chat" },
-  { href: "/admin", label: "Dashboard" },
+  { href: "/admin#overview", label: "Overview" },
+  { href: "/admin#prompts", label: "Prompts" },
+  { href: "/admin#skills", label: "Skills" },
+  { href: "/admin#modes", label: "Modes" },
   { href: "/admin/rag-sources", label: "RAG Sources" },
-  { href: "/admin/prompts", label: "Prompts" },
-  { href: "/admin/skills", label: "Skills" },
-  { href: "/admin/modes", label: "Modes" },
 ];
 
 export default function AdminLayout({
