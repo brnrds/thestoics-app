@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ActiveModeRecord, MessageRecord, ThreadRecord } from "@/lib/contracts";
 import { ThreadChatPanel } from "@/components/chat/ThreadChatPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type ThreadDetailResponse = {
   thread: ThreadRecord;
@@ -330,7 +331,10 @@ export default function ChatWorkspacePage() {
       </aside>
 
       {/* ── Main ────────────────────────────────────────────────────────── */}
-      <main className="flex min-w-0 flex-1 flex-col">
+      <main className="relative flex min-w-0 flex-1 flex-col">
+        <div className="absolute top-4 right-6 z-10">
+          <ThemeToggle />
+        </div>
         {!activeThread ? (
           <div className="flex h-full items-center justify-center">
             <div className="max-w-md px-6 text-center">

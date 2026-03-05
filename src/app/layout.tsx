@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Newsreader, Source_Serif_4, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const displayFont = Newsreader({
   variable: "--font-display",
@@ -26,6 +27,9 @@ export const metadata: Metadata = {
   description: "Mode-aware Stoic conversations with shared RAG citations.",
 };
 
+// Inlined to prevent flash of wrong theme before React hydrates
+const themeInitScript = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,10 +37,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${displayFont.variable} ${bodyFont.variable} ${uiFont.variable} antialiased`}
       >
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -96,16 +96,6 @@ export function ThreadChatPanel({
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Thread header ───────────────────────────────────────────────── */}
-      <div className="flex items-baseline justify-between border-b border-rule px-6 py-3">
-        <div>
-          <h2 className="text-lg">{thread.title}</h2>
-          <p className="font-sans text-xs text-ink-tertiary">
-            {thread.modeSnapshot.modeName} · {thread.modeSnapshot.modeSlug}
-          </p>
-        </div>
-      </div>
-
       {/* ── Messages ────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[700px] space-y-6 px-6 py-8">
