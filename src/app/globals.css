@@ -188,6 +188,31 @@ h1, h2, h3, h4 {
   transform: rotate(0deg) scale(1);
 }
 
+/* ── Scrollbars ──────────────────────────────────────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-rule) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-rule);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-tertiary);
+}
+
 /* ── Keyframes ────────────────────────────────────────────────────────────── */
 
 @keyframes pulse-dot {

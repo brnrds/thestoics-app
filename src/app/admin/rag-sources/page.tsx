@@ -300,8 +300,8 @@ export default function AdminRagSourcesPage() {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_1.35fr]">
-      <section className="rounded-lg border border-rule bg-surface p-5">
+    <div className="grid gap-8 xl:grid-cols-[minmax(22rem,1fr)_minmax(0,2fr)]">
+      <section className="rounded-lg border border-rule bg-surface p-6">
         <h2 className="text-2xl">RAG Text Finder</h2>
         <p className="mt-1 font-sans text-sm text-ink-secondary">
           Human-triggered source discovery for each book. This tool only gathers
@@ -326,7 +326,7 @@ export default function AdminRagSourcesPage() {
 
         <div className="mt-4 space-y-2">
           <p className="label-meta">Select Book</p>
-          <div className="max-h-[28rem] space-y-2 overflow-y-auto">
+          <div className="max-h-[36rem] space-y-2 overflow-y-auto">
             {loading && (
               <p className="font-sans text-sm text-ink-tertiary">
                 Loading source catalog…
@@ -362,9 +362,11 @@ export default function AdminRagSourcesPage() {
                   <p className="mt-0.5 font-sans text-xs text-ink-secondary">
                     {book.author}
                   </p>
-                  <p className="mt-1 font-sans text-[11px] text-ink-tertiary">
-                    Suggested first: {book.websiteSuggested ?? "None"}
-                  </p>
+                  {book.websiteSuggested && (
+                    <p className="mt-1 truncate font-sans text-[11px] text-ink-tertiary">
+                      {book.websiteSuggested}
+                    </p>
+                  )}
                 </button>
               );
             })}
@@ -372,7 +374,7 @@ export default function AdminRagSourcesPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-rule bg-surface p-5">
+      <section className="rounded-lg border border-rule bg-surface p-6">
         <h2 className="text-2xl">Run Monitor</h2>
         <p className="mt-1 font-sans text-sm text-ink-secondary">
           Orchestrate one run at a time and inspect each search query before using
@@ -425,7 +427,7 @@ export default function AdminRagSourcesPage() {
               </p>
             )}
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-md border border-rule-light p-3">
                 <p className="label-meta">Queries Executed</p>
                 <p className="mt-1 font-sans text-3xl font-light tracking-tight">
@@ -442,7 +444,7 @@ export default function AdminRagSourcesPage() {
 
             <div className="mt-5">
               <h3 className="font-sans text-sm font-medium">Activity</h3>
-              <div className="mt-2 max-h-60 space-y-2 overflow-y-auto">
+              <div className="mt-2 max-h-80 space-y-2 overflow-y-auto">
                 {steps.length === 0 && (
                   <p className="font-sans text-sm text-ink-tertiary">
                     No queries executed yet.
@@ -481,7 +483,7 @@ export default function AdminRagSourcesPage() {
 
             <div className="mt-5">
               <h3 className="font-sans text-sm font-medium">Collected Links</h3>
-              <div className="mt-2 max-h-72 space-y-2 overflow-y-auto">
+              <div className="mt-2 max-h-96 space-y-2 overflow-y-auto">
                 {links.length === 0 && (
                   <p className="font-sans text-sm text-ink-tertiary">
                     No links collected yet.
@@ -492,21 +494,21 @@ export default function AdminRagSourcesPage() {
                     key={link.url}
                     className="rounded-md border border-rule-light p-3"
                   >
+                    {link.title && (
+                      <p className="font-sans text-sm font-medium text-ink">
+                        {link.title}
+                      </p>
+                    )}
                     <a
                       href={link.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-sans text-sm text-accent hover:underline"
+                      className="mt-0.5 block truncate font-sans text-sm text-accent hover:underline"
                     >
                       {link.url}
                     </a>
-                    {link.title && (
-                      <p className="mt-1 font-sans text-xs text-ink-secondary">
-                        {link.title}
-                      </p>
-                    )}
-                    <p className="mt-1 font-sans text-[11px] text-ink-tertiary">
-                      Source query: {link.query}
+                    <p className="mt-1 truncate font-sans text-[11px] text-ink-tertiary">
+                      Query: {link.query}
                     </p>
                   </article>
                 ))}
