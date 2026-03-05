@@ -63,8 +63,14 @@ export default async function AdminHomePage() {
 
         <div className="flex flex-wrap gap-2 font-sans text-sm">
           <Link
-            href="/admin/prompts"
+            href="/admin/rag-sources"
             className="rounded-md bg-ink px-4 py-2 text-canvas transition-opacity hover:opacity-85"
+          >
+            Find RAG Texts
+          </Link>
+          <Link
+            href="/admin/prompts"
+            className="rounded-md border border-rule px-4 py-2 text-ink transition-colors hover:bg-surface-alt"
           >
             Manage Prompts
           </Link>

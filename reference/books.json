@@ -1,0 +1,121 @@
+{
+  "websites": [
+    "gutenberg.org",
+    "archive.org",
+    "perseus.tufts.edu",
+    "stoics.com",
+    "sacred-texts.com"
+  ],
+  "books": [
+    {
+      "author": "Marcus Aurelius",
+      "name": "Meditations",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Epictetus",
+      "name": "Discourses",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Epictetus",
+      "name": "Enchiridion",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "Letters to Lucilius",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "On the Shortness of Life",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "On Anger (De Ira)",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "On the Happy Life (De Vita Beata)",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "On Providence",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "On the Firmness of the Wise Person",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "On Tranquility of Mind",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "Moral Essays (collected)",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Seneca",
+      "name": "Natural Questions",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "A.A. Long & D.N. Sedley",
+      "name": "The Hellenistic Philosophers",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Hans von Arnim",
+      "name": "Stoicorum Veterum Fragmenta (SVF)",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Diogenes Laërtius",
+      "name": "Lives of the Eminent Philosophers",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Cicero",
+      "name": "On Duties (De Officiis)",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Cicero",
+      "name": "On the Nature of the Gods",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Cicero",
+      "name": "Tusculan Disputations",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Cicero",
+      "name": "On Ends (De Finibus)",
+      "website-suggested": "gutenberg.org"
+    },
+    {
+      "author": "Cicero",
+      "name": "Stoic Paradoxes (Paradoxa Stoicorum)",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Musonius Rufus",
+      "name": "Lectures and Fragments",
+      "website-suggested": "archive.org"
+    },
+    {
+      "author": "Hierocles",
+      "name": "Elements of Ethics (fragments)",
+      "website-suggested": "archive.org"
+    }
+  ]
+}

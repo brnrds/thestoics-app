@@ -37,7 +37,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

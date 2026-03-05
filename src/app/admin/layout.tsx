@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const navItems = [
   { href: "/chat", label: "Chat" },
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/rag-sources", label: "RAG Sources" },
   { href: "/admin/prompts", label: "Prompts" },
   { href: "/admin/skills", label: "Skills" },
   { href: "/admin/modes", label: "Modes" },
