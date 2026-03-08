@@ -14,14 +14,18 @@ describe("assembleModeContext", () => {
         { id: "p0", name: "Z", role: "SAFETY", content: "zero", order: 0 },
       ],
       skills: [
-        { id: "s2", name: "Reflect", description: "", body: "reflect", order: 2 },
-        { id: "s1", name: "Act", description: "", body: "act", order: 1 },
+        { id: "s2", name: "Reflect", description: "reflect description", body: "reflect", order: 2 },
+        { id: "s1", name: "Act", description: "act description", body: "act", order: 1 },
       ],
     });
 
     expect(result.debug.orderedPrompts.map((prompt) => prompt.name)).toEqual(["Z", "A", "B"]);
     expect(result.debug.orderedSkills.map((skill) => skill.name)).toEqual(["Act", "Reflect"]);
     expect(result.text).toContain("RAG policy");
+    expect(result.text).toContain("Configured Skill Metadata");
+    expect(result.text).toContain("Skill 1 (Act):\n");
+    expect(result.text).toContain("act description");
+    expect(result.text).not.toContain("\nact\n");
   });
 
   it("handles missing prompts and skills gracefully", () => {

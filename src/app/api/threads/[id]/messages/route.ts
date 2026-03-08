@@ -1,10 +1,20 @@
 import {
   consumeStream,
   convertToModelMessages,
+  stepCountIs,
   streamText,
+  tool,
   type UIMessage,
 } from "ai";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import {
+  buildSkillsPrompt,
+  discoverFileSystemSkills,
+  mergeSkills,
+  snapshotSkillsToRuntimeSkills,
+  type RuntimeSkill,
+} from "@/lib/agent-skills";
 import { authErrorToResponse, requireCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { assertApiKeyConfigured, getModel, MissingApiKeyError } from "@/lib/ai-provider";
@@ -54,6 +64,14 @@ function asModelInput(messages: PersistedChatMessage[]) {
       },
     ],
   }));
+}
+
+const loadSkillInputSchema = z.object({
+  name: z.string().min(1).describe("The exact skill name to load."),
+});
+
+function findSkillByName(skills: RuntimeSkill[], name: string) {
+  return skills.find((skill) => skill.name.toLowerCase() === name.trim().toLowerCase());
 }
 
 export const maxDuration = 45;
@@ -162,6 +180,10 @@ export async function POST(request: Request, { params }: Params) {
 
     const modeSnapshot = snapshotFromThread(thread);
     const assembly = assembleModeContext(modeSnapshot);
+    const fileSkills = await discoverFileSystemSkills([
+      `${process.cwd()}/.agents/skills`,
+    ]);
+    const availableSkills = mergeSkills(fileSkills, snapshotSkillsToRuntimeSkills(modeSnapshot));
 
     const ragResult = await queryRagService({
       query: latestUser.content,
@@ -180,11 +202,20 @@ export async function POST(request: Request, { params }: Params) {
     const system = [
       assembly.text,
       "",
+      buildSkillsPrompt(
+        availableSkills.map((skill) => ({
+          name: skill.name,
+          description: skill.description,
+        }))
+      ),
+      "",
       "RAG Retrieval Context:",
       retrievalContext,
       "",
       `RAG Status: ${ragStatus}`,
-      "When sources are available, ground claims in the retrieval context and cite them inline like [1], [2].",
+      "Treat retrieval context as the primary evidence base for this reply.",
+      "When sources are available, prefer claims supported by retrieved passages over generic background knowledge.",
+      "Cite source-backed claims inline like [1], [2], and if retrieval only partially answers the question, say what is supported and what remains uncertain.",
       "If retrieval context is empty or unavailable, state that clearly and continue with best-effort Stoic guidance.",
     ].join("\n");
 
@@ -194,6 +225,32 @@ export async function POST(request: Request, { params }: Params) {
         model: getModel(),
         system,
         messages: await convertToModelMessages(asModelInput(workingMessages)),
+        tools: {
+          loadSkill: tool({
+            description:
+              "Load a skill to get specialized instructions before answering the user.",
+            inputSchema: loadSkillInputSchema,
+            strict: true,
+            execute: async ({ name }, { experimental_context }) => {
+              const context = experimental_context as { skills: RuntimeSkill[] };
+              const skill = findSkillByName(context.skills, name);
+
+              if (!skill) {
+                return { error: `Skill '${name}' not found.` };
+              }
+
+              return {
+                skillName: skill.name,
+                skillDirectory: skill.path ?? null,
+                content: skill.body,
+              };
+            },
+          }),
+        },
+        stopWhen: stepCountIs(5),
+        experimental_context: {
+          skills: availableSkills,
+        },
         onError: ({ error }) => {
           console.error("[chat-stream]", error);
         },

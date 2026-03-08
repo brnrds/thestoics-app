@@ -60,7 +60,7 @@ export function assembleModeContext(snapshot: ModeSnapshot): AssembledContext {
       ? orderedSkills
           .map(
             (skill, index) =>
-              `Skill ${index + 1} (${skill.name}):\n${skill.body}`
+              `Skill ${index + 1} (${skill.name}):\n${skill.description}`
           )
           .join("\n\n")
       : "No skills configured for this mode.";
@@ -72,7 +72,7 @@ export function assembleModeContext(snapshot: ModeSnapshot): AssembledContext {
     "Configured Prompts:",
     promptSection,
     "",
-    "Configured Skills:",
+    "Configured Skill Metadata:",
     skillSection,
     "",
     "RAG policy: Retrieval is always enabled for this product and citations must be grounded in returned sources.",

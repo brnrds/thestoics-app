@@ -28,6 +28,8 @@ vi.mock("@/lib/rag-client", () => ({
 vi.mock("ai", () => ({
   consumeStream: vi.fn(async () => undefined),
   convertToModelMessages: vi.fn(async (messages) => messages),
+  stepCountIs: vi.fn((count: number) => ({ type: "stepCountIs", count })),
+  tool: vi.fn((definition) => definition),
   streamText: vi.fn(() => ({
     toUIMessageStreamResponse: async (options?: {
       onFinish?: (event: {
@@ -178,6 +180,7 @@ describe("message send smoke", () => {
   it("persists user and assistant messages in one send flow", async () => {
     const { POST: createThread } = await import("@/app/api/threads/route");
     const { POST: sendMessage } = await import("@/app/api/threads/[id]/messages/route");
+    const { streamText } = await import("ai");
 
     const { mode } = await createModeFixture();
 
@@ -228,6 +231,13 @@ describe("message send smoke", () => {
     expect(storedMessages[1].role).toBe("assistant");
     expect(storedMessages[1].content).toContain("Mock assistant response");
     expect(Array.isArray(storedMessages[1].citations)).toBe(true);
+
+    expect(vi.mocked(streamText)).toHaveBeenCalled();
+    const streamArgs = vi.mocked(streamText).mock.calls.at(-1)?.[0];
+    expect(streamArgs?.tools?.loadSkill).toBeDefined();
+    expect(streamArgs?.stopWhen).toEqual({ type: "stepCountIs", count: 5 });
+    expect(streamArgs?.system).toContain("Treat retrieval context as the primary evidence base");
+    expect(streamArgs?.system).not.toContain("rag-source-grounding");
   });
 });
 
