@@ -219,3 +219,468 @@ h1, h2, h3, h4 {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*  LANDING PAGE                                                              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes landing-line-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes landing-scroll-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.3);
+  }
+}
+
+@keyframes landing-drift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ── Grain overlay ──────────────────────────────────────────────────── */
+
+.landing-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px;
+}
+
+.dark .landing-grain {
+  opacity: 0.06;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.landing-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  height: 4rem;
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  background: color-mix(in oklab, var(--color-canvas), transparent 15%);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-rule), transparent 50%);
+}
+
+/* ── Logo mark ──────────────────────────────────────────────────────── */
+
+.landing-logo-mark {
+  color: var(--color-accent);
+  animation: landing-drift 5s ease-in-out infinite;
+}
+
+/* ── CTA buttons ────────────────────────────────────────────────────── */
+
+.landing-cta-small {
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  padding: 0.4rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  transition: opacity 180ms ease, transform 180ms ease;
+  text-decoration: none;
+}
+
+.landing-cta-small:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.landing-cta-primary {
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0.875rem 2.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-accent);
+  color: #fff;
+  text-decoration: none;
+  transition: all 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 6px 16px color-mix(in oklab, var(--color-accent), transparent 70%);
+}
+
+.landing-cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    0 10px 28px color-mix(in oklab, var(--color-accent), transparent 55%);
+}
+
+.landing-cta-secondary {
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  padding: 0.875rem 2.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-rule);
+  color: var(--color-ink-secondary);
+  text-decoration: none;
+  transition: all 200ms ease;
+}
+
+.landing-cta-secondary:hover {
+  border-color: var(--color-ink-tertiary);
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+}
+
+/* ── Overline ───────────────────────────────────────────────────────── */
+
+.landing-overline {
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 1rem;
+  animation: landing-fade-up 700ms ease both;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────── */
+
+.landing-accent-line {
+  position: absolute;
+  top: 5rem;
+  left: 50%;
+  width: 1px;
+  height: 64px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--color-accent),
+    transparent
+  );
+  transform-origin: top;
+  animation: landing-line-grow 1s ease 300ms both;
+}
+
+.landing-hero-content {
+  text-align: center;
+  max-width: 900px;
+  animation: landing-fade-up 800ms ease 200ms both;
+}
+
+.landing-hero-title {
+  font-family: var(--font-display), serif;
+  font-weight: 400;
+  font-size: clamp(3rem, 8vw, 6.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--color-ink);
+  margin-bottom: 1.5rem;
+}
+
+.landing-hero-line {
+  display: block;
+}
+
+.landing-hero-line--1 {
+  animation: landing-fade-up 800ms ease 400ms both;
+}
+
+.landing-hero-line--2 {
+  animation: landing-fade-up 800ms ease 600ms both;
+  color: var(--color-accent);
+}
+
+.landing-hero-line--2 em {
+  font-style: italic;
+}
+
+.landing-hero-subtitle {
+  font-family: var(--font-body), serif;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  line-height: 1.7;
+  color: var(--color-ink-secondary);
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+  animation: landing-fade-up 800ms ease 700ms both;
+}
+
+.landing-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  animation: landing-fade-up 800ms ease 900ms both;
+}
+
+/* ── Scroll indicator ───────────────────────────────────────────────── */
+
+.landing-scroll-indicator {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: landing-fade-in 1s ease 1.4s both;
+}
+
+.landing-scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(
+    to bottom,
+    var(--color-accent),
+    transparent
+  );
+  animation: landing-scroll-pulse 2.4s ease-in-out infinite;
+  transform-origin: top;
+}
+
+/* ── Quote strip ────────────────────────────────────────────────────── */
+
+.landing-quote-strip {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-rule);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.landing-quote {
+  animation: landing-fade-up 700ms ease both;
+}
+
+.landing-quote-text {
+  font-family: var(--font-display), serif;
+  font-style: italic;
+  font-size: 1.375rem;
+  line-height: 1.45;
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+}
+
+.landing-quote-author {
+  margin-top: 0.75rem;
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/* ── Section titles ─────────────────────────────────────────────────── */
+
+.landing-section-title {
+  font-family: var(--font-display), serif;
+  font-weight: 400;
+  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: var(--color-ink);
+}
+
+.landing-section-title em {
+  font-style: italic;
+  color: var(--color-accent);
+}
+
+/* ── Feature cards ──────────────────────────────────────────────────── */
+
+.landing-feature-card {
+  position: relative;
+  padding: 2.5rem 2rem;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: all 300ms ease;
+  animation: landing-fade-up 700ms ease both;
+}
+
+.landing-feature-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 24px color-mix(in oklab, var(--color-accent), transparent 85%),
+    0 0 0 1px color-mix(in oklab, var(--color-accent), transparent 70%);
+}
+
+.landing-feature-number {
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  display: block;
+  margin-bottom: 1.25rem;
+}
+
+.landing-feature-title {
+  font-family: var(--font-display), serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  margin-bottom: 0.75rem;
+}
+
+.landing-feature-desc {
+  font-family: var(--font-body), serif;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-ink-secondary);
+}
+
+/* ── Modes section ──────────────────────────────────────────────────── */
+
+.landing-modes-section {
+  background: var(--color-surface-alt);
+  border-top: 1px solid var(--color-rule-light);
+  border-bottom: 1px solid var(--color-rule-light);
+}
+
+.landing-modes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.landing-mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: all 280ms ease;
+  animation: landing-fade-up 600ms ease both;
+}
+
+.landing-mode-card:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-wash);
+  transform: translateY(-3px);
+}
+
+.landing-mode-icon {
+  font-family: var(--font-display), serif;
+  font-size: 1.75rem;
+  color: var(--color-accent);
+  margin-bottom: 0.75rem;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-accent-wash);
+}
+
+.landing-mode-name {
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-bottom: 0.25rem;
+}
+
+.landing-mode-desc {
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.75rem;
+  color: var(--color-ink-tertiary);
+}
+
+/* ── Final CTA ──────────────────────────────────────────────────────── */
+
+.landing-final-cta {
+  position: relative;
+}
+
+.landing-final-cta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 80px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--color-accent),
+    transparent
+  );
+}
+
+.landing-final-title {
+  font-family: var(--font-display), serif;
+  font-weight: 400;
+  font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--color-ink);
+}
+
+.landing-final-title em {
+  font-style: italic;
+  color: var(--color-accent);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+
+.landing-footer {
+  border-top: 1px solid var(--color-rule);
+  background: var(--color-surface);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .landing-modes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-hero-actions {
+    flex-direction: column;
+  }
+
+  .landing-cta-primary,
+  .landing-cta-secondary {
+    width: 100%;
+    text-align: center;
+    max-width: 320px;
+  }
+}
