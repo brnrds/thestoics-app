@@ -9,6 +9,8 @@ type Props = {
   thread: ThreadRecord;
   persistedMessages: MessageRecord[];
   onPersistedRefresh: () => Promise<void>;
+  initialInput?: string | null;
+  onInitialInputConsumed?: () => void;
 };
 
 const RECORDING_MIME_TYPES = [
@@ -39,8 +41,15 @@ export function ThreadChatPanel({
   thread,
   persistedMessages,
   onPersistedRefresh,
+  initialInput,
+  onInitialInputConsumed,
 }: Props) {
-  const [input, setInput] = useState("");
+  const draftKey = `stoics-draft-${thread.id}`;
+  const [input, setInput] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(draftKey) ?? "";
+  });
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -87,6 +96,15 @@ export function ThreadChatPanel({
     }),
   });
   const previousStatusRef = useRef(status);
+  const didSendInitialRef = useRef(false);
+
+  useEffect(() => {
+    if (initialInput && !didSendInitialRef.current && status === "ready") {
+      didSendInitialRef.current = true;
+      void sendMessage({ text: initialInput });
+      onInitialInputConsumed?.();
+    }
+  }, [initialInput, status, sendMessage, onInitialInputConsumed]);
 
   useEffect(() => {
     const previousStatus = previousStatusRef.current;
@@ -99,6 +117,14 @@ export function ThreadChatPanel({
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (input) {
+      localStorage.setItem(draftKey, input);
+    } else {
+      localStorage.removeItem(draftKey);
+    }
+  }, [input, draftKey]);
 
   useEffect(
     () => () => {
@@ -121,9 +147,7 @@ export function ThreadChatPanel({
       ? "Transcribing voice..."
       : isGeneratingVoiceReply
         ? "Generating voice reply..."
-        : isStreaming
-          ? ""
-          : "\u2318 Enter to send";
+        : "";
   const canToggleMic =
     isRecording || (!isStreaming && !isTranscribing && !isGeneratingVoiceReply);
 
@@ -358,7 +382,7 @@ export function ThreadChatPanel({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (input.trim() && !isStreaming) {
         pendingVoiceReplyRef.current = null;
@@ -380,7 +404,7 @@ export function ThreadChatPanel({
             </p>
           )}
 
-          {messages.map((message) => {
+          {messages.map((message, index) => {
             const isUser = message.role === "user";
             const text = messageText(message);
             const persistedAssistant = !isUser
@@ -399,11 +423,40 @@ export function ThreadChatPanel({
               );
             }
 
+            const isLastMessage = index === messages.length - 1;
+            const showStreamingCursor = isLastMessage && status === "streaming";
+
             return (
-              <div key={message.id}>
+              <div key={message.id} className="group/msg relative">
                 <div className="whitespace-pre-wrap text-base leading-[1.85]">
                   {text}
+                  {showStreamingCursor && (
+                    <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[0.15em] animate-pulse bg-ink-tertiary" />
+                  )}
                 </div>
+
+                <button
+                  className="absolute top-0 right-0 rounded p-1 text-ink-tertiary opacity-0 transition-opacity hover:text-ink-secondary group-hover/msg:opacity-100"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(text).then(() => {
+                      setCopiedId(message.id);
+                      setTimeout(() => setCopiedId((c) => c === message.id ? null : c), 1500);
+                    });
+                  }}
+                  aria-label="Copy response"
+                  title={copiedId === message.id ? "Copied!" : "Copy"}
+                >
+                  {copiedId === message.id ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M3 8.5l3 3 7-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M10.5 5.5V3.5a1 1 0 00-1-1h-6a1 1 0 00-1 1v6a1 1 0 001 1h2" stroke="currentColor" strokeWidth="1.5"/>
+                    </svg>
+                  )}
+                </button>
 
                 {voiceReplyTargetMessageId === message.id &&
                 isGeneratingVoiceReply ? (

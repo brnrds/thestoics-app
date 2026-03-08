@@ -10,12 +10,17 @@ Retrieval-only backend for the Stoics Next.js app.
 
 ## Defaults
 
-- `DATA_PATH`: `/Users/bcsantos/Desktop/Kirkpatrick/stoics`
+- `DATA_PATH`: workspace root (repo root locally, `/workspace` in Docker)
 - `CHROMA_PATH`: `/Users/bcsantos/Desktop/Kirkpatrick/stoics/services/rag-server/chroma_db`
 - Excluded directories during ingestion:
   - `.git`, `node_modules`, `.next`, `.vercel`, `dist`, `build`, `chroma_db`, `__pycache__`, `.pytest_cache`, `.ruff_cache`, `venv`, `.venv`, `htmlcov`
 
 Override via env vars (`DATA_PATH`, `CHROMA_PATH`, `INGEST_EXCLUDED_DIRS_STR`).
+For a portable local + container setup, prefer a repo-relative value such as:
+
+```env
+DATA_PATH=reference/found-books/human-approved
+```
 
 ## API
 

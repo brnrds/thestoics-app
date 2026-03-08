@@ -3,14 +3,30 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 RAG_SERVER_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DATA_PATH = (
+LOCAL_REPO_ROOT = (
     Path(__file__).resolve().parents[3]
     if len(Path(__file__).resolve().parents) > 3
     else RAG_SERVER_ROOT
 )
+CONTAINER_WORKSPACE_ROOT = Path("/workspace")
+WORKSPACE_ROOT = (
+    CONTAINER_WORKSPACE_ROOT
+    if CONTAINER_WORKSPACE_ROOT.exists()
+    else LOCAL_REPO_ROOT
+)
+DEFAULT_DATA_PATH = WORKSPACE_ROOT
+
+
+def _resolve_path(value: str | Path, base_dir: Path) -> Path:
+    """Resolve env-provided paths consistently across local and container runs."""
+    path = Path(value).expanduser()
+    if path.is_absolute():
+        return path.resolve()
+    return (base_dir / path).resolve()
 
 
 class Settings(BaseSettings):
@@ -54,6 +70,20 @@ class Settings(BaseSettings):
         ".git,node_modules,.next,.vercel,dist,build,"
         "chroma_db,__pycache__,.pytest_cache,.ruff_cache,venv,.venv,htmlcov"
     )
+
+    @field_validator("data_path", mode="before")
+    @classmethod
+    def _resolve_data_path(cls, value: str | Path | None) -> Path:
+        if value is None:
+            return DEFAULT_DATA_PATH
+        return _resolve_path(value, WORKSPACE_ROOT)
+
+    @field_validator("chroma_path", mode="before")
+    @classmethod
+    def _resolve_chroma_path(cls, value: str | Path | None) -> Path:
+        if value is None:
+            return RAG_SERVER_ROOT / "chroma_db"
+        return _resolve_path(value, RAG_SERVER_ROOT)
 
     @property
     def cors_origins(self) -> list[str]:

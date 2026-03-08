@@ -83,6 +83,7 @@ Use `.env.local`:
 - `AUTH_PROVIDER`: reserved for the future Clerk swap; current implementation uses the stub provider
 - `RAG_SERVER_URL`: base URL for rag-server-style service (for example `http://localhost:8000`)
 - `RAG_SERVER_TIMEOUT_MS`: timeout for RAG requests in milliseconds
+- `DATA_PATH`: optional ingestion source path for rag-server. Use a repo-relative path so it works in both local and Docker (recommended: `reference/found-books/human-approved`)
 
 ## Stub Auth Notes
 
@@ -113,7 +114,8 @@ The app calls `POST {RAG_SERVER_URL}/rag/retrieve` with a retrieval-focused payl
 
 If RAG is down, chat still responds with graceful fallback behavior and empty citation state.
 
-The `services/rag-server` default `DATA_PATH` is the repo root, with common heavy directories excluded (`node_modules`, `.next`, `.git`, etc.).
+The `services/rag-server` default `DATA_PATH` is the workspace root, with common heavy directories excluded (`node_modules`, `.next`, `.git`, etc.).
+For a stable local + production setup, set `DATA_PATH=reference/found-books/human-approved` in env and run ingestion without `-d`.
 
 ## Local PostgreSQL On `pi`
 

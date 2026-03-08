@@ -34,8 +34,8 @@ export const modeInputSchema = z.object({
 });
 
 export const threadCreateSchema = z.object({
-  title: z.string().trim().min(1).max(120).default("New Reflection"),
-  modeId: z.string().min(1, "modeId is required"),
+  title: z.string().trim().min(1).max(120).default("New Thread"),
+  modeId: z.string().min(1).optional(),
 });
 
 export const threadUpdateSchema = z.object({
