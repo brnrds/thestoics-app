@@ -1,8 +1,8 @@
 services:
   rag:
     build:
-      context: ../..
-      dockerfile: services/rag-server/Dockerfile
+      context: ../../services/rag-server
+      dockerfile: Dockerfile
     command:
       - sh
       - -lc
