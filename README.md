@@ -112,6 +112,74 @@ pnpm db:push
 pnpm db:seed
 ```
 
+## Deployment
+
+Production is currently served at:
+
+- `https://alpha.thestoics.app`
+
+Current server layout on `kamino`:
+
+- Repo checkout: `/home/bcsantos/apps/alpha.thestoics.app/app`
+- Reverse proxy: host `nginx`
+- Public app port: `127.0.0.1:3120 -> 3000`
+- Services: `app` (Next.js), `rag` (Python retrieval service)
+- Persistence:
+  - SQLite in Docker volume `app_stoics_sqlite_data`
+  - Chroma data in Docker volume `app_stoics_rag_data`
+
+### Deployment Files
+
+The repo includes the production deployment artifacts:
+
+- `Dockerfile`
+- `compose.yml`
+- `.dockerignore`
+- `docker/app-entrypoint.sh`
+
+### Server Env
+
+On `kamino`, the server-only env file lives at:
+
+```bash
+/home/bcsantos/apps/alpha.thestoics.app/app/.env
+```
+
+Keep secrets only there. Do not commit them.
+
+Important production note:
+
+- local `.env.local` may use `RAG_SERVER_URL="http://127.0.0.1:8000"`
+- server `.env` should use `RAG_SERVER_URL="http://rag:8000"`
+
+### Update Process
+
+When shipping a new version:
+
+1. Push the desired commit to GitHub.
+2. SSH to `kamino`.
+3. Pull and rebuild the stack:
+
+```bash
+cd /home/bcsantos/apps/alpha.thestoics.app/app
+git pull --ff-only
+docker compose up -d --build
+```
+
+4. Verify:
+
+```bash
+docker compose ps
+curl -I http://127.0.0.1:3120
+curl -k -I --resolve alpha.thestoics.app:443:127.0.0.1 https://alpha.thestoics.app
+```
+
+### Notes
+
+- `nginx` and TLS are managed on the host, not in Docker.
+- The app container runs `pnpm db:push` and `pnpm db:seed` on startup.
+- The RAG container runs ingestion on startup before serving requests.
+
 ## Verification
 
 Run all quality checks:
