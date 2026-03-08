@@ -13,6 +13,22 @@ enum PromptRole {
   SAFETY
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id                 String               @id @default(cuid())
+  authProviderUserId String               @unique
+  email              String?
+  displayName        String?
+  role               UserRole             @default(USER)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  threads            ConversationThread[]
+}
+
 model Prompt {
   id        String      @id @default(cuid())
   name      String      @unique
@@ -71,6 +87,7 @@ model ModeSkill {
 
 model ConversationThread {
   id                     String    @id @default(cuid())
+  userId                 String?
   title                  String
   modeId                 String?
   modeNameSnapshot       String
@@ -81,7 +98,10 @@ model ConversationThread {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   mode                   InteractionMode? @relation(fields: [modeId], references: [id], onDelete: SetNull)
+  user                   User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages               Message[]
+
+  @@index([userId, updatedAt])
 }
 
 model Message {

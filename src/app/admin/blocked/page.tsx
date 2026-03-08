@@ -44,10 +44,10 @@ function AdminBlockedContent() {
     <div className="mx-auto flex min-h-[75vh] w-full max-w-xl items-center px-6 py-10">
       <section className="w-full rounded-lg border border-rule bg-surface p-6">
         <p className="label-meta">Admin Access Required</p>
-        <h2 className="mt-2 text-3xl">Stub Auth Blocked</h2>
+        <h2 className="mt-2 text-3xl">Stub Admin Blocked</h2>
         <p className="mt-2 font-sans text-sm text-ink-secondary">
-          This route is protected by ADMIN_STUB_TOKEN until Clerk integration is
-          added.
+          This route is protected by the shared stub auth layer. Enter
+          `ADMIN_STUB_TOKEN` to switch your local session into the admin role.
         </p>
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
           <div>

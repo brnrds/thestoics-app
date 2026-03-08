@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE_NAME, validateAdminToken } from "@/lib/auth/admin-stub";
+import { createAdminStubCookies, isAdminStubEnabled, validateAdminToken } from "@/lib/auth";
 
 export async function POST(request: Request) {
+  if (!isAdminStubEnabled()) {
+    return NextResponse.json(
+      { error: "Admin stub auth is disabled." },
+      { status: 403 }
+    );
+  }
+
   const body = await request.json().catch(() => ({}));
   const token = typeof body?.token === "string" ? body.token : "";
   const redirectPath =
@@ -17,14 +24,9 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ ok: true, redirectPath });
-  response.cookies.set({
-    name: ADMIN_COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    secure: process.env.NODE_ENV === "production",
-  });
+  for (const cookie of createAdminStubCookies()) {
+    response.cookies.set(cookie);
+  }
 
   return response;
 }

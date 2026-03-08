@@ -1,22 +1,45 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { isAdminAuthorizedFromRequest, isAdminStubEnabled } from "@/lib/auth/admin-stub";
+import {
+  clerkMiddleware,
+  createRouteMatcher,
+  isAdminStubEnabled,
+} from "@/lib/auth";
 
-export function middleware(request: NextRequest) {
-  if (!isAdminStubEnabled()) {
-    return NextResponse.next();
-  }
+const isProtectedRoute = createRouteMatcher(["/chat(.*)", "/api/threads(.*)"]);
+const isAdminRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
 
+export default clerkMiddleware(async (auth, request: NextRequest) => {
   const pathname = request.nextUrl.pathname;
 
   if (pathname === "/admin/blocked" || pathname.startsWith("/api/admin/login")) {
     return NextResponse.next();
   }
 
-  const authorized = isAdminAuthorizedFromRequest(request);
+  if (isProtectedRoute(request)) {
+    await auth.protect();
+  }
 
-  if (authorized) {
+  if (!isAdminRoute(request)) {
     return NextResponse.next();
+  }
+
+  const { sessionClaims } = await auth();
+  if (sessionClaims?.metadata?.role === "admin") {
+    return NextResponse.next();
+  }
+
+  if (!isAdminStubEnabled()) {
+    if (pathname.startsWith("/api/admin")) {
+      return NextResponse.json(
+        {
+          error: "Admin stub auth is disabled and no admin session is active.",
+        },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (pathname.startsWith("/api/admin")) {
@@ -32,8 +55,11 @@ export function middleware(request: NextRequest) {
   blockedUrl.pathname = "/admin/blocked";
   blockedUrl.searchParams.set("redirect", pathname);
   return NextResponse.redirect(blockedUrl);
-}
+});
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: [
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+  ],
 };

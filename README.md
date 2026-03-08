@@ -13,12 +13,12 @@ Internal beta chat application for testing multiple Stoic interaction modes with
 
 ## Delivered Capabilities
 
-- Admin stub auth on `/admin` routes (replaceable later with Clerk)
+- Shared stub auth layer shaped for future Clerk integration
 - Prompt CRUD (`name`, `role`, `content`)
 - Skill CRUD (`name`, `description`, `instruction body`)
 - Interaction Mode CRUD with many-to-many prompt/skill assignments
 - Mode default selection for new chats
-- Multi-thread chat with create/rename/delete and latest-activity ordering
+- Private per-user chat threads with ownership-scoped create/read/update/delete
 - Required mode selection when creating new thread
 - Thread mode snapshot stored at creation for historical reproducibility
 - Deterministic server-side prompt assembly from mode prompts + skills
@@ -80,15 +80,20 @@ Use `.env.local`:
 - `OPENAI_MODEL`: optional model override (default `gpt-4o-mini`)
 - `ADMIN_STUB_ENABLED`: `true`/`false` (defaults to `true`)
 - `ADMIN_STUB_TOKEN`: token required to unlock `/admin`
+- `AUTH_PROVIDER`: reserved for the future Clerk swap; current implementation uses the stub provider
 - `RAG_SERVER_URL`: base URL for rag-server-style service (for example `http://localhost:8000`)
 - `RAG_SERVER_TIMEOUT_MS`: timeout for RAG requests in milliseconds
 
-## Admin Stub Auth Notes
+## Stub Auth Notes
 
-- Middleware protects `/admin` and `/api/admin/*`.
+- Middleware protects `/chat`, `/api/threads/*`, `/admin`, and `/api/admin/*`.
+- Chat requests default to a stable stub user in local development.
+- Thread and message APIs scope all reads and writes to the current app user.
+- Legacy beta threads with no owner are discarded automatically on first thread API access.
 - Unauthorized users are redirected to `/admin/blocked`.
-- Enter `ADMIN_STUB_TOKEN` there to set a secure HTTP-only cookie.
-- Stub auth logic is isolated in `src/lib/auth/admin-stub.ts` so Clerk can replace it with minimal refactor.
+- Enter `ADMIN_STUB_TOKEN` there to switch the current stub session into the admin role.
+- Test requests can override the stub identity with `x-stub-user-id`, `x-stub-user-role`, and `x-stub-session-id`.
+- Auth logic is isolated in `src/lib/auth` so Clerk can replace it with minimal route churn.
 
 ## RAG Service Expectations
 

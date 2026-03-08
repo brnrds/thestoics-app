@@ -6,6 +6,7 @@ export default defineConfig({
     environment: "node",
     include: ["src/tests/**/*.test.ts"],
     setupFiles: ["src/tests/setup.ts"],
+    fileParallelism: false,
     env: {
       DATABASE_URL:
         process.env.TEST_DATABASE_URL ??
