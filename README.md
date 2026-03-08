@@ -42,13 +42,23 @@ pnpm install
 cp .env.example .env.local
 ```
 
-3. Open the SSH tunnel to the dedicated Postgres container on `pi`:
+3. Ensure the dedicated RAG container is running on `pi` (one-time setup):
+
+```bash
+# see docs/pi-rag-deployment.md for full setup
+ssh pi
+cd ~/apps/stoics/deploy/pi
+docker compose -f rag.compose.yml up -d --build
+```
+
+4. Open SSH tunnels to `pi` for Postgres and RAG (separate terminals):
 
 ```bash
 ssh -N -L 5434:127.0.0.1:5434 pi
+ssh -N -L 8010:127.0.0.1:8010 pi
 ```
 
-4. Prepare database and seed initial mode/prompt/skill:
+5. Prepare database and seed initial mode/prompt/skill:
 
 ```bash
 DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?schema=public" pnpm db:generate
@@ -56,13 +66,13 @@ DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?sche
 DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?schema=public" pnpm db:seed
 ```
 
-5. Run dev server:
+6. Run dev server:
 
 ```bash
 pnpm dev
 ```
 
-6. Open:
+7. Open:
 
 - Chat workspace: `http://localhost:3000/chat`
 - Admin: `http://localhost:3000/admin`
@@ -81,7 +91,7 @@ Use `.env.local`:
 - `ADMIN_STUB_ENABLED`: `true`/`false` (defaults to `true`)
 - `ADMIN_STUB_TOKEN`: token required to unlock `/admin`
 - `AUTH_PROVIDER`: reserved for the future Clerk swap; current implementation uses the stub provider
-- `RAG_SERVER_URL`: base URL for rag-server-style service (for example `http://localhost:8000`)
+- `RAG_SERVER_URL`: base URL for rag-server-style service (for example `http://127.0.0.1:8010` when tunneled to `pi`)
 - `RAG_SERVER_TIMEOUT_MS`: timeout for RAG requests in milliseconds
 - `DATA_PATH`: optional ingestion source path for rag-server. Use a repo-relative path so it works in both local and Docker (recommended: `reference/found-books/human-approved`)
 
@@ -114,8 +124,12 @@ The app calls `POST {RAG_SERVER_URL}/rag/retrieve` with a retrieval-focused payl
 
 If RAG is down, chat still responds with graceful fallback behavior and empty citation state.
 
-The `services/rag-server` default `DATA_PATH` is the workspace root, with common heavy directories excluded (`node_modules`, `.next`, `.git`, etc.).
-For a stable local + production setup, set `DATA_PATH=reference/found-books/human-approved` in env and run ingestion without `-d`.
+For stable local + production retrieval, run the container with:
+
+- `DATA_PATH=reference/found-books/human-approved`
+- `CHROMA_PATH=/data/chroma`
+
+This keeps ingestion consistent across `pi` and `kamino`.
 
 ## Local PostgreSQL On `pi`
 
@@ -143,6 +157,17 @@ docker run -d \
 docker exec stoics-postgres psql -U stoics -d postgres -c 'CREATE DATABASE stoics_test'
 ```
 
+## Local RAG On `pi`
+
+Local development uses a dedicated `rag` container on `pi`, bound to loopback only:
+
+- Compose file: `deploy/pi/rag.compose.yml`
+- Host bind: `127.0.0.1:8010 -> 8000`
+- Volume: `stoics_rag_data`
+- Source mount: repo checkout at `/workspace` (read-only)
+
+Full setup and update instructions: `docs/pi-rag-deployment.md`
+
 ## Scripts
 
 ```bash
@@ -168,8 +193,8 @@ Current server layout on `kamino`:
 - Public app port: `127.0.0.1:3120 -> 3000`
 - Services: `app` (Next.js), `postgres` (PostgreSQL), `rag` (Python retrieval service)
 - Persistence:
-  - PostgreSQL in Docker volume `app_stoics_postgres_data`
-  - Chroma data in Docker volume `app_stoics_rag_data`
+  - PostgreSQL in Docker volume `stoics_postgres_data`
+  - Chroma data in Docker volume `stoics_rag_data`
 
 ### Deployment Files
 
@@ -190,12 +215,30 @@ On `kamino`, the server-only env file lives at:
 
 Keep secrets only there. Do not commit them.
 
-Important production note:
+Important env note:
 
 - local `.env.local` may use `DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?schema=public"`
-- local `.env.local` may use `RAG_SERVER_URL="http://127.0.0.1:8000"`
+- local `.env.local` should use `RAG_SERVER_URL="http://127.0.0.1:8010"` (SSH tunnel to `pi`)
 - server `.env` should use `DATABASE_URL="postgresql://stoics:${POSTGRES_PASSWORD}@postgres:5432/stoics?schema=public"`
 - server `.env` should use `RAG_SERVER_URL="http://rag:8000"`
+- server `.env` should set `DATA_PATH="reference/found-books/human-approved"` for the `rag` service
+
+### Drift Check Before Deploy
+
+Before rebuilding on `kamino`, verify live containers match `compose.yml`:
+
+```bash
+cd /home/bcsantos/apps/alpha.thestoics.app/app
+docker compose config --services
+docker compose ps
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+```
+
+Expected baseline:
+
+- `docker compose config --services` includes `app`, `postgres`, and `rag`
+- `docker compose ps` shows all three services healthy/running
+- No legacy single-container service should remain attached to the same public route
 
 ### Update Process
 
@@ -223,8 +266,7 @@ curl -k -I --resolve alpha.thestoics.app:443:127.0.0.1 https://alpha.thestoics.a
 
 - `nginx` and TLS are managed on the host, not in Docker.
 - The app container runs `pnpm db:push` and `pnpm db:seed` on startup.
-- `compose.yml` now provisions a `postgres` service for containerized environments.
-- Migrating an existing SQLite deployment to PostgreSQL is a separate one-time data migration task; this repo change does not copy old SQLite data automatically.
+- `compose.yml` provisions `postgres` and `rag`; `app` talks to RAG at `http://rag:8000` on the private Compose network.
 - The RAG container runs ingestion on startup before serving requests.
 
 ## Verification

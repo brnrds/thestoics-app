@@ -10,13 +10,13 @@ Retrieval-only backend for the Stoics Next.js app.
 
 ## Defaults
 
-- `DATA_PATH`: workspace root (repo root locally, `/workspace` in Docker)
-- `CHROMA_PATH`: `/Users/bcsantos/Desktop/Kirkpatrick/stoics/services/rag-server/chroma_db`
+- `DATA_PATH`: `reference/found-books/human-approved` when present, otherwise workspace root (repo root locally, `/workspace` in Docker)
+- `CHROMA_PATH`: `services/rag-server/chroma_db` (local) or `/data/chroma` (containerized deploys)
 - Excluded directories during ingestion:
   - `.git`, `node_modules`, `.next`, `.vercel`, `dist`, `build`, `chroma_db`, `__pycache__`, `.pytest_cache`, `.ruff_cache`, `venv`, `.venv`, `htmlcov`
 
 Override via env vars (`DATA_PATH`, `CHROMA_PATH`, `INGEST_EXCLUDED_DIRS_STR`).
-For a portable local + container setup, prefer a repo-relative value such as:
+For a portable local + container setup, use a repo-relative value:
 
 ```env
 DATA_PATH=reference/found-books/human-approved
@@ -59,7 +59,43 @@ Response:
 - `GET /ingest/stats`
 - `DELETE /ingest/clear` with `{ "confirm": true }`
 
-## Local Run
+## Container-First Run
+
+The default Stoics workflow runs this service in Docker, not from a laptop-side virtualenv.
+
+### On `kamino`
+
+Use the root stack:
+
+```bash
+docker compose up -d --build rag
+```
+
+### On `pi` (dev/shared RAG)
+
+Use the dedicated deployment artifact:
+
+```bash
+cd deploy/pi
+cp .env.rag.example .env.rag
+docker compose -f rag.compose.yml up -d --build
+```
+
+Then tunnel from local development:
+
+```bash
+ssh -N -L 8010:127.0.0.1:8010 pi
+```
+
+Set:
+
+```bash
+RAG_SERVER_URL="http://127.0.0.1:8010"
+```
+
+## Host-Run (Fallback Only)
+
+Use this only for one-off debugging:
 
 ```bash
 cd services/rag-server

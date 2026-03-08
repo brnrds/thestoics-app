@@ -48,7 +48,7 @@ services:
       - .env
     environment:
       CHROMA_PATH: /data/chroma
-      DATA_PATH: /workspace
+      DATA_PATH: ${DATA_PATH:-reference/found-books/human-approved}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

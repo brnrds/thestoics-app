@@ -18,7 +18,13 @@ WORKSPACE_ROOT = (
     if CONTAINER_WORKSPACE_ROOT.exists()
     else LOCAL_REPO_ROOT
 )
-DEFAULT_DATA_PATH = WORKSPACE_ROOT
+PREFERRED_DATA_SUBPATH = Path("reference/found-books/human-approved")
+DEFAULT_DATA_PATH_CANDIDATE = WORKSPACE_ROOT / PREFERRED_DATA_SUBPATH
+DEFAULT_DATA_PATH = (
+    DEFAULT_DATA_PATH_CANDIDATE
+    if DEFAULT_DATA_PATH_CANDIDATE.exists()
+    else WORKSPACE_ROOT
+)
 
 
 def _resolve_path(value: str | Path, base_dir: Path) -> Path:

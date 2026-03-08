@@ -1,0 +1,30 @@
+services:
+  rag:
+    build:
+      context: ../..
+      dockerfile: services/rag-server/Dockerfile
+    command:
+      - sh
+      - -lc
+      - python -m app.cli ingest && exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+    env_file:
+      - path: .env.rag
+        required: false
+    environment:
+      CHROMA_PATH: /data/chroma
+      DATA_PATH: ${DATA_PATH:-reference/found-books/human-approved}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    ports:
+      - "127.0.0.1:${PI_RAG_HOST_PORT:-8010}:8000"
+    restart: unless-stopped
+    volumes:
+      - ../..:/workspace:ro
+      - stoics_rag_data:/data
+
+volumes:
+  stoics_rag_data:
