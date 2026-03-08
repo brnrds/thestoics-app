@@ -12,6 +12,7 @@ const sectionAnchors = [
 ] as const;
 
 const subpages = [
+  { href: "/admin/users", label: "Users" },
   { href: "/admin/rag-sources", label: "RAG Sources" },
 ] as const;
 

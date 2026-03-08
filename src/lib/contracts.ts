@@ -1,4 +1,4 @@
-import type { PromptRole } from "@prisma/client";
+import type { PromptRole, UserRole } from "@prisma/client";
 import type { ModeSnapshot } from "@/lib/prompt-assembly";
 
 export type PromptRecord = {
@@ -15,6 +15,18 @@ export type SkillRecord = {
   name: string;
   description: string;
   body: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminUserRecord = {
+  id: string;
+  authProviderUserId: string;
+  email: string | null;
+  displayName: string | null;
+  role: UserRole;
+  providerSource: "stub" | "external";
+  threadCount: number;
   createdAt: string;
   updatedAt: string;
 };

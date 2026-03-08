@@ -6,6 +6,7 @@ import type {
   ModeSkill,
   Prompt,
   Skill,
+  User,
 } from "@prisma/client";
 import type { ModeSnapshot } from "@/lib/prompt-assembly";
 import { snapshotFromThread, toModeSnapshot, type InteractionModeWithRelations } from "@/lib/mode-service";
@@ -29,6 +30,24 @@ export function serializeSkill(skill: Skill) {
     body: skill.body,
     createdAt: skill.createdAt,
     updatedAt: skill.updatedAt,
+  };
+}
+
+export function serializeAdminUser(
+  user: User & { _count: { threads: number } }
+) {
+  return {
+    id: user.id,
+    authProviderUserId: user.authProviderUserId,
+    email: user.email,
+    displayName: user.displayName,
+    role: user.role,
+    providerSource: user.authProviderUserId.startsWith("user_stub_")
+      ? ("stub" as const)
+      : ("external" as const),
+    threadCount: user._count.threads,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
   };
 }
 

@@ -8,7 +8,7 @@ import { AdminModesSection } from "@/components/admin/AdminModesSection";
 export const dynamic = "force-dynamic";
 
 export default async function AdminHomePage() {
-  const [promptCount, skillCount, modeCount, activeModes, defaultMode, threadCount] =
+  const [promptCount, skillCount, modeCount, activeModes, defaultMode, threadCount, userCount] =
     await Promise.all([
       db.prompt.count(),
       db.skill.count(),
@@ -16,6 +16,7 @@ export default async function AdminHomePage() {
       db.interactionMode.count({ where: { active: true } }),
       db.interactionMode.findFirst({ where: { isDefault: true } }),
       db.conversationThread.count(),
+      db.user.count(),
     ]);
 
   const stats = [
@@ -63,12 +64,21 @@ export default async function AdminHomePage() {
             <p>
               <span className="text-ink-secondary">Threads:</span> {threadCount}
             </p>
+            <p>
+              <span className="text-ink-secondary">Users:</span> {userCount}
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2 font-sans text-sm">
             <Link
-              href="/admin/rag-sources"
+              href="/admin/users"
               className="rounded-md bg-ink px-4 py-2 text-canvas transition-opacity hover:opacity-85"
+            >
+              Open Users
+            </Link>
+            <Link
+              href="/admin/rag-sources"
+              className="rounded-md border border-rule px-4 py-2 text-ink-secondary transition-colors hover:bg-surface-alt"
             >
               Open RAG Sources
             </Link>

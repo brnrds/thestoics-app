@@ -1,4 +1,4 @@
-import { PromptRole } from "@prisma/client";
+import { PromptRole, UserRole } from "@prisma/client";
 import { z } from "zod";
 
 const requiredText = (fieldLabel: string) =>
@@ -48,4 +48,11 @@ export const sendMessageSchema = z.object({
 
 export const retryMessageSchema = z.object({
   messageId: z.string().min(1).optional(),
+});
+
+export const adminUserSeedSchema = z.object({
+  email: z.email().trim(),
+  firstName: z.string().trim().max(80).optional().default(""),
+  lastName: z.string().trim().max(80).optional().default(""),
+  role: z.nativeEnum(UserRole).default(UserRole.USER),
 });

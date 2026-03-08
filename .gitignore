@@ -51,3 +51,5 @@ __pycache__/
 htmlcov/
 services/**/.venv/
 services/**/chroma_db/
+
+reference/found-books/
