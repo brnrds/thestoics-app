@@ -6,7 +6,11 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 RAG_SERVER_ROOT = Path(__file__).resolve().parents[1]
-STOICS_REPO_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_DATA_PATH = (
+    Path(__file__).resolve().parents[3]
+    if len(Path(__file__).resolve().parents) > 3
+    else RAG_SERVER_ROOT
+)
 
 
 class Settings(BaseSettings):
@@ -26,7 +30,7 @@ class Settings(BaseSettings):
 
     # Paths
     chroma_path: Path = RAG_SERVER_ROOT / "chroma_db"
-    data_path: Path = STOICS_REPO_ROOT
+    data_path: Path = DEFAULT_DATA_PATH
 
     # Retrieval
     retrieval_k: int = 6
