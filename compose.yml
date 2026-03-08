@@ -4,12 +4,14 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
+      postgres:
+        condition: service_healthy
       rag:
         condition: service_healthy
     env_file:
       - .env
     environment:
-      DATABASE_URL: ${DATABASE_URL:-file:/data/stoics.db}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://stoics:stoics_dev_password@postgres:5432/stoics?schema=public}
       HOSTNAME: 0.0.0.0
       NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: production
@@ -18,8 +20,21 @@ services:
     ports:
       - "127.0.0.1:3120:3000"
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-stoics}
+      POSTGRES_USER: ${POSTGRES_USER:-stoics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stoics_dev_password}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-stoics} -d $${POSTGRES_DB:-stoics}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
     volumes:
-      - stoics_sqlite_data:/data
+      - stoics_postgres_data:/var/lib/postgresql/data
 
   rag:
     build:
@@ -47,4 +62,4 @@ services:
 
 volumes:
   stoics_rag_data:
-  stoics_sqlite_data:
+  stoics_postgres_data:

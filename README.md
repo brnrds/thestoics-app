@@ -7,7 +7,7 @@ Internal beta chat application for testing multiple Stoic interaction modes with
 - Next.js App Router + TypeScript
 - Tailwind CSS v4 (CSS-first patterns)
 - AI SDK (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`)
-- Prisma + SQLite
+- Prisma + PostgreSQL
 - D3.js 7.9.0 (admin visualization)
 - Vitest (unit/smoke tests)
 
@@ -36,27 +36,33 @@ Internal beta chat application for testing multiple Stoic interaction modes with
 pnpm install
 ```
 
-2. Copy environment file:
+2. Copy environment file for Next.js runtime:
 
 ```bash
 cp .env.example .env.local
 ```
 
-3. Prepare database and seed initial mode/prompt/skill:
+3. Open the SSH tunnel to the dedicated Postgres container on `pi`:
 
 ```bash
-DATABASE_URL="file:./prisma/dev.db" pnpm db:generate
-DATABASE_URL="file:./prisma/dev.db" pnpm db:push
-DATABASE_URL="file:./prisma/dev.db" pnpm db:seed
+ssh -N -L 5434:127.0.0.1:5434 pi
 ```
 
-4. Run dev server:
+4. Prepare database and seed initial mode/prompt/skill:
+
+```bash
+DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?schema=public" pnpm db:generate
+DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?schema=public" pnpm db:push
+DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?schema=public" pnpm db:seed
+```
+
+5. Run dev server:
 
 ```bash
 pnpm dev
 ```
 
-5. Open:
+6. Open:
 
 - Chat workspace: `http://localhost:3000/chat`
 - Admin: `http://localhost:3000/admin`
@@ -65,7 +71,11 @@ pnpm dev
 
 Use `.env.local`:
 
-- `DATABASE_URL`: SQLite URL for Prisma (default `file:./prisma/dev.db`)
+- `DATABASE_URL`: PostgreSQL URL for app runtime (default `postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?schema=public`)
+- `TEST_DATABASE_URL`: PostgreSQL URL used by `pnpm test` (default `postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics_test?schema=public`)
+- `POSTGRES_DB`: database name for Docker Compose PostgreSQL service (default `stoics`)
+- `POSTGRES_USER`: database user for Docker Compose PostgreSQL service (default `stoics`)
+- `POSTGRES_PASSWORD`: database password for Docker Compose PostgreSQL service
 - `OPENAI_API_KEY`: required for live AI responses
 - `OPENAI_MODEL`: optional model override (default `gpt-4o-mini`)
 - `ADMIN_STUB_ENABLED`: `true`/`false` (defaults to `true`)
@@ -100,6 +110,32 @@ If RAG is down, chat still responds with graceful fallback behavior and empty ci
 
 The `services/rag-server` default `DATA_PATH` is the repo root, with common heavy directories excluded (`node_modules`, `.next`, `.git`, etc.).
 
+## Local PostgreSQL On `pi`
+
+Local development uses a dedicated Docker container on `pi`:
+
+- Container: `stoics-postgres`
+- Host bind: `127.0.0.1:5434 -> 5432`
+- Volume: `stoics_postgres_data`
+- Databases: `stoics`, `stoics_test`
+
+This is intentionally isolated from the other Docker workloads on `pi`. Access it through SSH tunneling instead of exposing it on the LAN.
+
+Provisioning command on `pi`:
+
+```bash
+docker run -d \
+  --name stoics-postgres \
+  --restart unless-stopped \
+  -e POSTGRES_USER=stoics \
+  -e POSTGRES_PASSWORD=stoics_dev_password \
+  -e POSTGRES_DB=stoics \
+  -p 127.0.0.1:5434:5432 \
+  -v stoics_postgres_data:/var/lib/postgresql/data \
+  postgres:16-alpine
+docker exec stoics-postgres psql -U stoics -d postgres -c 'CREATE DATABASE stoics_test'
+```
+
 ## Scripts
 
 ```bash
@@ -123,9 +159,9 @@ Current server layout on `kamino`:
 - Repo checkout: `/home/bcsantos/apps/alpha.thestoics.app/app`
 - Reverse proxy: host `nginx`
 - Public app port: `127.0.0.1:3120 -> 3000`
-- Services: `app` (Next.js), `rag` (Python retrieval service)
+- Services: `app` (Next.js), `postgres` (PostgreSQL), `rag` (Python retrieval service)
 - Persistence:
-  - SQLite in Docker volume `app_stoics_sqlite_data`
+  - PostgreSQL in Docker volume `app_stoics_postgres_data`
   - Chroma data in Docker volume `app_stoics_rag_data`
 
 ### Deployment Files
@@ -149,7 +185,9 @@ Keep secrets only there. Do not commit them.
 
 Important production note:
 
+- local `.env.local` may use `DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics?schema=public"`
 - local `.env.local` may use `RAG_SERVER_URL="http://127.0.0.1:8000"`
+- server `.env` should use `DATABASE_URL="postgresql://stoics:${POSTGRES_PASSWORD}@postgres:5432/stoics?schema=public"`
 - server `.env` should use `RAG_SERVER_URL="http://rag:8000"`
 
 ### Update Process
@@ -178,6 +216,8 @@ curl -k -I --resolve alpha.thestoics.app:443:127.0.0.1 https://alpha.thestoics.a
 
 - `nginx` and TLS are managed on the host, not in Docker.
 - The app container runs `pnpm db:push` and `pnpm db:seed` on startup.
+- `compose.yml` now provisions a `postgres` service for containerized environments.
+- Migrating an existing SQLite deployment to PostgreSQL is a separate one-time data migration task; this repo change does not copy old SQLite data automatically.
 - The RAG container runs ingestion on startup before serving requests.
 
 ## Verification
@@ -190,4 +230,8 @@ pnpm typecheck
 pnpm test
 ```
 
-All three pass in the current implementation.
+Run tests against the dedicated test database:
+
+```bash
+TEST_DATABASE_URL="postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics_test?schema=public" pnpm test
+```

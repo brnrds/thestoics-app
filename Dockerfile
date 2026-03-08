@@ -39,8 +39,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY docker/app-entrypoint.sh /app/docker/app-entrypoint.sh
 
-RUN mkdir -p /data
-
 EXPOSE 3000
 
 CMD ["sh", "/app/docker/app-entrypoint.sh"]

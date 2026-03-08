@@ -7,7 +7,10 @@ export default defineConfig({
     include: ["src/tests/**/*.test.ts"],
     setupFiles: ["src/tests/setup.ts"],
     env: {
-      DATABASE_URL: "file:./prisma/test.db",
+      DATABASE_URL:
+        process.env.TEST_DATABASE_URL ??
+        process.env.DATABASE_URL ??
+        "postgresql://stoics:stoics_dev_password@127.0.0.1:5434/stoics_test?schema=public",
       NODE_ENV: "test",
     },
   },
