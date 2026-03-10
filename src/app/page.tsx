@@ -240,7 +240,7 @@ export default function LandingPage() {
       <footer className="landing-footer">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-6 lg:px-12">
           <p className="font-sans text-xs text-ink-tertiary">
-            Confer with the Stoics &middot; A Kirkpatrick project
+            Confer with the Stoics
           </p>
           <p className="font-sans text-xs text-ink-tertiary">
             Built with care for seekers of wisdom
