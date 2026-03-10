@@ -52,4 +52,6 @@ htmlcov/
 services/**/.venv/
 services/**/chroma_db/
 
-reference/found-books/
+reference/found-books/*
+!reference/found-books/human-approved/
+!reference/found-books/human-approved/meditations.txt
